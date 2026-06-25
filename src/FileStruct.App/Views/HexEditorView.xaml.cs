@@ -13,6 +13,16 @@ public partial class HexEditorView : UserControl
 
     private void OnLoaded(object sender, System.Windows.RoutedEventArgs e)
     {
+        // 右键菜单"添加书签"
+        HexViewControl.BookmarkRequested += offset =>
+        {
+            if (DataContext is MainViewModel mainVm)
+            {
+                mainVm.BookmarkList.AddBookmark($"偏移 0x{offset:X}", offset);
+                mainVm.StatusText = $"已添加书签 @ 0x{offset:X}";
+            }
+        };
+
         // HexView 选择变更 → 实时预览 + 结构树高亮
         HexViewControl.Selection.SelectionChanged += (_, args) =>
         {
