@@ -87,7 +87,94 @@ public class HexView : Control
     public override void OnApplyTemplate()
     {
         base.OnApplyTemplate();
+        var listBox = GetTemplateChild("PART_ListBox") as ListBox;
+        if (listBox != null)
+        {
+            listBox.PreviewMouseLeftButtonDown += OnListBoxPreviewMouseDown;
+            listBox.MouseMove += OnListBoxMouseMove;
+            listBox.MouseLeftButtonUp += OnListBoxMouseUp;
+        }
         RebuildRows();
+    }
+
+    private bool _isDragging;
+
+    private void OnListBoxPreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (Buffer == null) return;
+
+        // 获取点击的 ListBoxItem
+        var element = e.OriginalSource as System.Windows.FrameworkElement;
+        while (element != null && element is not ListBoxItem)
+            element = System.Windows.Media.VisualTreeHelper.GetParent(element) as System.Windows.FrameworkElement;
+
+        if (element is ListBoxItem item && item.Content is HexRowData rowData)
+        {
+            var rowOffset = rowData.RowOffset;
+            var rowLen = rowData.RowByteCount;
+            if (rowLen <= 0) return;
+
+            // 根据点击位置估算字节偏移
+            var pos = e.GetPosition(item);
+            var bytesPerRow = BytesPerRow;
+
+            // 偏移列约 80px，十六进制列从 80px 开始
+            if (pos.X > 80)
+            {
+                int byteIndex;
+                if (pos.X < 460) // Hex 列区域
+                {
+                    // 每个字节约 23px (根据分组大小调整)
+                    var hexStartX = 80.0;
+                    var byteWidth = bytesPerRow <= 16 ? 460.0 / bytesPerRow : 480.0 / bytesPerRow;
+                    byteIndex = (int)((pos.X - hexStartX) / byteWidth);
+                }
+                else // ASCII 列区域
+                {
+                    var asciiStartX = 470.0;
+                    var charWidth = 8.0;
+                    byteIndex = (int)((pos.X - asciiStartX) / charWidth);
+                }
+
+                byteIndex = Math.Clamp(byteIndex, 0, rowLen - 1);
+                var absoluteOffset = rowOffset + byteIndex;
+
+                Selection.BeginSelection(absoluteOffset);
+                _isDragging = true;
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void OnListBoxMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!_isDragging || Buffer == null) return;
+        if (e.LeftButton != System.Windows.Input.MouseButtonState.Pressed)
+        {
+            _isDragging = false;
+            return;
+        }
+
+        var element = e.OriginalSource as System.Windows.FrameworkElement;
+        while (element != null && element is not ListBoxItem)
+            element = System.Windows.Media.VisualTreeHelper.GetParent(element) as System.Windows.FrameworkElement;
+
+        if (element is ListBoxItem item && item.Content is HexRowData rowData)
+        {
+            var pos = e.GetPosition(item);
+            var rowOffset = rowData.RowOffset;
+            var rowLen = rowData.RowByteCount;
+            if (rowLen <= 0) return;
+
+            var byteWidth = 460.0 / BytesPerRow;
+            var byteIndex = Math.Clamp((int)((pos.X - 80) / byteWidth), 0, rowLen - 1);
+            Selection.ExtendSelection(rowOffset + byteIndex);
+        }
+    }
+
+    private void OnListBoxMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        _isDragging = false;
     }
 
     private void RebuildRows()
@@ -204,6 +291,7 @@ public class HexRowList : IList
 
         return new HexRowData
         {
+            RowOffset = offset,
             OffsetString = offsetStr,
             HexString = hexStr,
             AsciiString = new string(asciiChars),
@@ -232,6 +320,7 @@ public class HexRowList : IList
 /// </summary>
 public class HexRowData
 {
+    public long RowOffset { get; init; }
     public string OffsetString { get; init; } = "";
     public string HexString { get; init; } = "";
     public string AsciiString { get; init; } = "";
