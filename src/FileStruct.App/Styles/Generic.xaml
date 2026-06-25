@@ -2,6 +2,15 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:controls="clr-namespace:FileStruct.App.Controls">
 
+    <!-- 单字节数据模板 -->
+    <DataTemplate x:Key="ByteCellTemplate">
+        <Border x:Name="ByteBorder" Width="24" Height="18" Margin="1,0">
+            <TextBlock Text="{Binding Hex}"
+                       FontFamily="Cascadia Code" FontSize="13"
+                       HorizontalAlignment="Center"/>
+        </Border>
+    </DataTemplate>
+
     <!-- 十六进制行数据模板 -->
     <DataTemplate x:Key="HexRowTemplate">
         <Border x:Name="RowBorder" Height="20">
@@ -15,26 +24,26 @@
                 <!-- 偏移列 -->
                 <TextBlock Grid.Column="0"
                            Text="{Binding OffsetString}"
-                           FontFamily="Cascadia Code"
-                           FontSize="13"
-                           Foreground="#888"
-                           Margin="4,0"/>
+                           FontFamily="Cascadia Code" FontSize="13"
+                           Foreground="#888" Margin="4,0"/>
 
-                <!-- 十六进制列 -->
-                <TextBlock Grid.Column="1"
-                           Text="{Binding HexString}"
-                           FontFamily="Cascadia Code"
-                           FontSize="13"
-                           Foreground="#333"
-                           Margin="8,0,0,0"/>
+                <!-- 十六进制列 - 逐字节显示 -->
+                <ItemsControl Grid.Column="1"
+                              ItemsSource="{Binding Bytes}"
+                              ItemTemplate="{StaticResource ByteCellTemplate}"
+                              Margin="4,0,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" IsItemsHost="True"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
 
                 <!-- ASCII 列 -->
                 <TextBlock Grid.Column="2"
                            Text="{Binding AsciiString}"
-                           FontFamily="Cascadia Code"
-                           FontSize="13"
-                           Foreground="#555"
-                           Margin="8,0,0,0"/>
+                           FontFamily="Cascadia Code" FontSize="13"
+                           Foreground="#555" Margin="8,0,0,0"/>
             </Grid>
         </Border>
     </DataTemplate>

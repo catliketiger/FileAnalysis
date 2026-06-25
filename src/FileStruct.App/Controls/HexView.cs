@@ -142,65 +142,59 @@ public class HexView : Control
 
         var selStart = SelectionStart;
         var selEnd = SelectionEnd;
+        var hlBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(80, 66, 133, 244));
+        var normalBrush = System.Windows.Media.Brushes.Transparent;
 
         for (int i = 0; i < listBox.Items.Count; i++)
         {
-            if (listBox.ItemContainerGenerator.ContainerFromIndex(i) is ListBoxItem item && item.Content is HexRowData row)
+            if (listBox.ItemContainerGenerator.ContainerFromIndex(i) is ListBoxItem item && item.Content is HexRowData)
             {
-                var rowStart = row.RowOffset;
-                var rowEnd = rowStart + row.RowByteCount;
-                var highlighted = selStart >= 0 && rowStart < selEnd && rowEnd > selStart;
-                item.Background = highlighted
-                    ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(50, 66, 133, 244))
-                    : System.Windows.Media.Brushes.Transparent;
+                // 遍历行内的所有字节 Border 元素
+                ApplyByteHighlights(item, selStart, selEnd, hlBrush, normalBrush);
             }
         }
+    }
+
+    private static void ApplyByteHighlights(System.Windows.DependencyObject parent, long selStart, long selEnd,
+        System.Windows.Media.Brush hlBrush, System.Windows.Media.Brush normalBrush)
+    {
+        var count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
+        for (int i = 0; i < count; i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+            if (child is System.Windows.Controls.Border border && border.DataContext is ByteCell cell)
+            {
+                border.Background = (selStart >= 0 && cell.Offset >= selStart && cell.Offset <= selEnd)
+                    ? hlBrush : normalBrush;
+            }
+            else
+            {
+                ApplyByteHighlights(child, selStart, selEnd, hlBrush, normalBrush);
+            }
+        }
+    }
+
+    private static long? GetClickedByteOffset(System.Windows.DependencyObject? element)
+    {
+        while (element != null)
+        {
+            if (element is System.Windows.FrameworkElement fe && fe.DataContext is ByteCell cell)
+                return cell.Offset;
+            element = System.Windows.Media.VisualTreeHelper.GetParent(element);
+        }
+        return null;
     }
 
     private void OnListBoxPreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (Buffer == null) return;
 
-        // 获取点击的 ListBoxItem
-        var element = e.OriginalSource as System.Windows.FrameworkElement;
-        while (element != null && element is not ListBoxItem)
-            element = System.Windows.Media.VisualTreeHelper.GetParent(element) as System.Windows.FrameworkElement;
-
-        if (element is ListBoxItem item && item.Content is HexRowData rowData)
+        var offset = GetClickedByteOffset(e.OriginalSource as System.Windows.DependencyObject);
+        if (offset.HasValue)
         {
-            var rowOffset = rowData.RowOffset;
-            var rowLen = rowData.RowByteCount;
-            if (rowLen <= 0) return;
-
-            // 根据点击位置估算字节偏移
-            var pos = e.GetPosition(item);
-            var bytesPerRow = BytesPerRow;
-
-            // 偏移列约 80px，十六进制列从 80px 开始
-            if (pos.X > 80)
-            {
-                int byteIndex;
-                if (pos.X < 460) // Hex 列区域
-                {
-                    // 每个字节约 23px (根据分组大小调整)
-                    var hexStartX = 80.0;
-                    var byteWidth = bytesPerRow <= 16 ? 460.0 / bytesPerRow : 480.0 / bytesPerRow;
-                    byteIndex = (int)((pos.X - hexStartX) / byteWidth);
-                }
-                else // ASCII 列区域
-                {
-                    var asciiStartX = 470.0;
-                    var charWidth = 8.0;
-                    byteIndex = (int)((pos.X - asciiStartX) / charWidth);
-                }
-
-                byteIndex = Math.Clamp(byteIndex, 0, rowLen - 1);
-                var absoluteOffset = rowOffset + byteIndex;
-
-                Selection.BeginSelection(absoluteOffset);
-                _isDragging = true;
-                e.Handled = true;
-            }
+            Selection.BeginSelection(offset.Value);
+            _isDragging = true;
+            e.Handled = true;
         }
     }
 
@@ -213,20 +207,10 @@ public class HexView : Control
             return;
         }
 
-        var element = e.OriginalSource as System.Windows.FrameworkElement;
-        while (element != null && element is not ListBoxItem)
-            element = System.Windows.Media.VisualTreeHelper.GetParent(element) as System.Windows.FrameworkElement;
-
-        if (element is ListBoxItem item && item.Content is HexRowData rowData)
+        var offset = GetClickedByteOffset(e.OriginalSource as System.Windows.DependencyObject);
+        if (offset.HasValue)
         {
-            var pos = e.GetPosition(item);
-            var rowOffset = rowData.RowOffset;
-            var rowLen = rowData.RowByteCount;
-            if (rowLen <= 0) return;
-
-            var byteWidth = 460.0 / BytesPerRow;
-            var byteIndex = Math.Clamp((int)((pos.X - 80) / byteWidth), 0, rowLen - 1);
-            Selection.ExtendSelection(rowOffset + byteIndex);
+            Selection.ExtendSelection(offset.Value);
         }
     }
 
@@ -342,6 +326,17 @@ public class HexRowList : IList
         }
         var hexStr = string.Join(" ", hexParts);
 
+        // 逐个字节数据（用于字节级高亮和精确点击）
+        var byteCells = new ByteCell[data.Length];
+        for (int i = 0; i < data.Length; i++)
+        {
+            byteCells[i] = new ByteCell
+            {
+                Hex = data[i].ToString("X2"),
+                Offset = offset + i,
+            };
+        }
+
         // ASCII 列
         var asciiChars = new char[data.Length];
         for (int i = 0; i < data.Length; i++)
@@ -354,6 +349,7 @@ public class HexRowList : IList
             HexString = hexStr,
             AsciiString = new string(asciiChars),
             RowByteCount = data.Length,
+            Bytes = byteCells,
         };
     }
 
@@ -384,4 +380,14 @@ public class HexRowData
     public string AsciiString { get; init; } = "";
     public int RowByteCount { get; init; }
     public bool IsCompleteRow => RowByteCount >= 16;
+    public ByteCell[] Bytes { get; init; } = [];
+}
+
+/// <summary>
+/// 单个字节显示数据
+/// </summary>
+public class ByteCell
+{
+    public string Hex { get; init; } = "";
+    public long Offset { get; init; }
 }
