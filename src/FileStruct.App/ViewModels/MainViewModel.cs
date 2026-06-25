@@ -263,6 +263,37 @@ public partial class MainViewModel : ObservableObject
         _logger.Info($"文件已关闭: {fileName}");
     }
 
+    [ObservableProperty]
+    private string _gotoOffsetText = "";
+
+    [RelayCommand]
+    private void GoToOffset()
+    {
+        if (_buffer == null || string.IsNullOrWhiteSpace(GotoOffsetText)) return;
+
+        try
+        {
+            var offset = GotoOffsetText.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                ? Convert.ToInt64(GotoOffsetText, 16)
+                : long.Parse(GotoOffsetText);
+
+            if (offset < 0 || offset >= _buffer.Length)
+            {
+                StatusText = $"偏移越界: 0x{offset:X} (文件大小: 0x{_buffer.Length:X})";
+                return;
+            }
+
+            HexEditor.ScrollOffset = (offset / 16) * 16;
+            HexEditor.SelectionInfo = $"跳转到: 0x{offset:X}";
+            StatusText = $"已跳转到偏移 0x{offset:X}";
+            GotoOffsetText = "";
+        }
+        catch (FormatException)
+        {
+            StatusText = $"无效的偏移格式: {GotoOffsetText} (支持十进制或 0x 十六进制)";
+        }
+    }
+
     [RelayCommand]
     private async Task RecognizeAsync()
     {

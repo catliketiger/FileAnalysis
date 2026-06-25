@@ -32,6 +32,7 @@
         <controls:HexView Grid.Row="1"
                           x:Name="HexViewControl"
                           Buffer="{Binding HexEditor.Buffer}"
-                          ByteGroupSize="{Binding HexEditor.ByteGroupSize}"/>
+                          ByteGroupSize="{Binding HexEditor.ByteGroupSize}"
+                          ScrollOffset="{Binding HexEditor.ScrollOffset}"/>
     </Grid>
 </UserControl>

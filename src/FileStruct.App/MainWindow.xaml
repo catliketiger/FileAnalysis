@@ -9,6 +9,10 @@
         Width="1400" Height="900"
         MinWidth="800" MinHeight="500">
 
+    <Window.InputBindings>
+        <KeyBinding Key="G" Modifiers="Control" Command="{Binding GoToOffsetCommand}"/>
+    </Window.InputBindings>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -33,6 +37,11 @@
                 <Separator/>
                 <MenuItem Header="退出(_X)" Command="{Binding ExitCommand}"/>
             </MenuItem>
+            <MenuItem Header="编辑(_E)">
+                <MenuItem Header="跳转到偏移(_G)" InputGestureText="Ctrl+G"
+                          Command="{Binding GoToOffsetCommand}"/>
+                <MenuItem Header="复制十六进制(_H)" InputGestureText="Ctrl+Shift+C"/>
+            </MenuItem>
             <MenuItem Header="视图(_V)">
                 <MenuItem Header="结构识别(_R)" Command="{Binding RecognizeCommand}"/>
                 <Separator/>
@@ -50,6 +59,15 @@
             <Button Content="🔍 识别" Command="{Binding RecognizeCommand}"/>
             <Separator/>
             <Button Content="💾 保存" Command="{Binding SaveProjectCommand}"/>
+            <Separator/>
+            <Label Content="跳转: " VerticalAlignment="Center"/>
+            <TextBox Text="{Binding GotoOffsetText, UpdateSourceTrigger=PropertyChanged}"
+                     Width="120" VerticalAlignment="Center">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding GoToOffsetCommand}"/>
+                </TextBox.InputBindings>
+            </TextBox>
+            <Button Content="Go" Command="{Binding GoToOffsetCommand}" VerticalAlignment="Center"/>
         </ToolBar>
 
         <!-- 主内容区 - 三栏布局 -->

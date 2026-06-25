@@ -1,6 +1,6 @@
+using System.Windows;
 using System.Windows.Controls;
 using FileStruct.App.ViewModels;
-using FileStruct.Core.Models;
 
 namespace FileStruct.App.Views;
 
@@ -9,27 +9,19 @@ public partial class StructureTreeView : UserControl
     public StructureTreeView()
     {
         InitializeComponent();
+        StructTree.SelectedItemChanged += OnSelectedItemChanged;
     }
 
-    public TreeViewItem? FindItemByNode(StructureNode node)
+    private void OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
-        return FindItemInContainer(StructTree.Items, node);
-    }
-
-    private TreeViewItem? FindItemInContainer(System.Collections.IEnumerable items, StructureNode node)
-    {
-        foreach (var item in items)
+        if (e.NewValue is TreeItemViewModel item &&
+            DataContext is MainViewModel mainVm)
         {
-            if (item is TreeItemViewModel vm && vm.Node == node)
-            {
-                return (TreeViewItem?)StructTree.ItemContainerGenerator.ContainerFromItem(item);
-            }
-            if (item is TreeViewItem tvi && tvi.HasItems)
-            {
-                var found = FindItemInContainer(tvi.Items, node);
-                if (found != null) return found;
-            }
+            var node = item.Node;
+            // 计算目标滚动偏移（对齐到行首）
+            var scrollOffset = (node.Offset / 16) * 16;
+            mainVm.HexEditor.ScrollOffset = scrollOffset;
+            mainVm.HexEditor.SelectionInfo = $"字段: {node.Name} @ 0x{node.Offset:X}, 长度 {node.Length}";
         }
-        return null;
     }
 }
