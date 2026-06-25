@@ -37,8 +37,12 @@ public class HexView : Control
         DependencyProperty.Register(nameof(ScrollOffset), typeof(long),
             typeof(HexView), new PropertyMetadata(0L, OnScrollOffsetChanged));
 
-    public static readonly DependencyProperty SelectedOffsetProperty =
-        DependencyProperty.Register(nameof(SelectedOffset), typeof(long),
+    public static readonly DependencyProperty SelectionStartProperty =
+        DependencyProperty.Register(nameof(SelectionStart), typeof(long),
+            typeof(HexView), new PropertyMetadata(-1L));
+
+    public static readonly DependencyProperty SelectionEndProperty =
+        DependencyProperty.Register(nameof(SelectionEnd), typeof(long),
             typeof(HexView), new PropertyMetadata(-1L));
 
     public BinaryBuffer? Buffer
@@ -65,10 +69,16 @@ public class HexView : Control
         set => SetValue(ScrollOffsetProperty, value);
     }
 
-    public long SelectedOffset
+    public long SelectionStart
     {
-        get => (long)GetValue(SelectedOffsetProperty);
-        set => SetValue(SelectedOffsetProperty, value);
+        get => (long)GetValue(SelectionStartProperty);
+        set => SetValue(SelectionStartProperty, value);
+    }
+
+    public long SelectionEnd
+    {
+        get => (long)GetValue(SelectionEndProperty);
+        set => SetValue(SelectionEndProperty, value);
     }
 
     #endregion
@@ -93,11 +103,59 @@ public class HexView : Control
             listBox.PreviewMouseLeftButtonDown += OnListBoxPreviewMouseDown;
             listBox.MouseMove += OnListBoxMouseMove;
             listBox.MouseLeftButtonUp += OnListBoxMouseUp;
+            listBox.PreviewMouseLeftButtonDown += OnListBoxEmptyClick;
+            listBox.ItemContainerGenerator.StatusChanged += (_, _) => UpdateRowHighlights();
         }
+        // 选择变更时更新高亮
+        Selection.SelectionChanged += (_, args) =>
+        {
+            SelectionStart = Selection.HasSelection ? Math.Min(args.StartOffset, args.EndOffset) : -1;
+            SelectionEnd = Selection.HasSelection ? Math.Max(args.StartOffset, args.EndOffset) : -1;
+            UpdateRowHighlights();
+        };
         RebuildRows();
     }
 
     private bool _isDragging;
+
+    private void OnListBoxEmptyClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        // 点击空白处取消选择
+        var element = e.OriginalSource as System.Windows.FrameworkElement;
+        while (element != null && element is not ListBoxItem && element is not ListBox)
+            element = System.Windows.Media.VisualTreeHelper.GetParent(element) as System.Windows.FrameworkElement;
+
+        if (element is ListBox && !Selection.HasSelection) return;
+        if (element is not ListBoxItem)
+        {
+            Selection.ClearSelection();
+            SelectionStart = -1;
+            SelectionEnd = -1;
+            UpdateRowHighlights();
+        }
+    }
+
+    private void UpdateRowHighlights()
+    {
+        var listBox = GetTemplateChild("PART_ListBox") as ListBox;
+        if (listBox == null) return;
+
+        var selStart = SelectionStart;
+        var selEnd = SelectionEnd;
+
+        for (int i = 0; i < listBox.Items.Count; i++)
+        {
+            if (listBox.ItemContainerGenerator.ContainerFromIndex(i) is ListBoxItem item && item.Content is HexRowData row)
+            {
+                var rowStart = row.RowOffset;
+                var rowEnd = rowStart + row.RowByteCount;
+                var highlighted = selStart >= 0 && rowStart < selEnd && rowEnd > selStart;
+                item.Background = highlighted
+                    ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(50, 66, 133, 244))
+                    : System.Windows.Media.Brushes.Transparent;
+            }
+        }
+    }
 
     private void OnListBoxPreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
