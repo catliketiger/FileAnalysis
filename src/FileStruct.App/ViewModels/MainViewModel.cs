@@ -331,6 +331,7 @@ public partial class MainViewModel : ObservableObject
 
     private List<long> _searchResults = [];
     private int _searchResultIndex = -1;
+    private int _searchPatternLength;
 
     [RelayCommand]
     private void SearchBytes()
@@ -352,6 +353,8 @@ public partial class MainViewModel : ObservableObject
         }
 
         if (pattern.Length == 0) { SearchResultText = "搜索内容为空"; return; }
+
+        _searchPatternLength = pattern.Length;
 
         // 滑动窗口搜索
         _searchResults.Clear();
@@ -399,7 +402,9 @@ public partial class MainViewModel : ObservableObject
     {
         if (_searchResultIndex < 0 || _searchResultIndex >= _searchResults.Count) return;
         var offset = _searchResults[_searchResultIndex];
-        HexEditor.ScrollOffset = (offset / 16) * 16;
+        var length = _searchPatternLength > 0 ? _searchPatternLength : 1;
+        HexEditor.NavigateToOffset = offset;
+        HexEditor.NavigateToLength = length;
         SearchResultText = $"结果 {_searchResultIndex + 1}/{_searchResults.Count} @ 0x{offset:X}";
         StatusText = SearchResultText;
     }

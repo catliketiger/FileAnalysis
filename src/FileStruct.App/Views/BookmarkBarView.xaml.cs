@@ -26,7 +26,8 @@ public partial class BookmarkBarView : UserControl
             var win = Window.GetWindow(this);
             if (win?.DataContext is MainViewModel mainVm)
             {
-                mainVm.HexEditor.ScrollOffset = (bookmark.Offset / 16) * 16;
+                mainVm.HexEditor.NavigateToOffset = bookmark.Offset;
+                mainVm.HexEditor.NavigateToLength = 1;
                 mainVm.HexEditor.SelectionInfo = $"书签: {bookmark.Name} @ 0x{bookmark.Offset:X}";
                 mainVm.StatusText = $"已跳转到书签: {bookmark.Name}";
             }

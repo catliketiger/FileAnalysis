@@ -33,6 +33,8 @@
                           x:Name="HexViewControl"
                           Buffer="{Binding HexEditor.Buffer}"
                           ByteGroupSize="{Binding HexEditor.ByteGroupSize}"
-                          ScrollOffset="{Binding HexEditor.ScrollOffset}"/>
+                          ScrollOffset="{Binding HexEditor.ScrollOffset}"
+                          NavigateToOffset="{Binding HexEditor.NavigateToOffset}"
+                          NavigateToLength="{Binding HexEditor.NavigateToLength}"/>
     </Grid>
 </UserControl>

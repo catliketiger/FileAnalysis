@@ -32,6 +32,12 @@ public partial class HexEditorViewModel : ObservableObject
     [ObservableProperty]
     private long _totalBytes;
 
+    [ObservableProperty]
+    private long _navigateToOffset = -1;
+
+    [ObservableProperty]
+    private int _navigateToLength = 1;
+
     partial void OnBufferChanged(BinaryBuffer? value)
     {
         TotalBytes = value?.Length ?? 0;

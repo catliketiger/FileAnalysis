@@ -45,6 +45,14 @@ public class HexView : Control
         DependencyProperty.Register(nameof(SelectionEnd), typeof(long),
             typeof(HexView), new PropertyMetadata(-1L));
 
+    public static readonly DependencyProperty NavigateToOffsetProperty =
+        DependencyProperty.Register(nameof(NavigateToOffset), typeof(long),
+            typeof(HexView), new PropertyMetadata(-1L, OnNavigateToOffsetChanged));
+
+    public static readonly DependencyProperty NavigateToLengthProperty =
+        DependencyProperty.Register(nameof(NavigateToLength), typeof(int),
+            typeof(HexView), new PropertyMetadata(1));
+
     public BinaryBuffer? Buffer
     {
         get => (BinaryBuffer?)GetValue(BufferProperty);
@@ -79,6 +87,18 @@ public class HexView : Control
     {
         get => (long)GetValue(SelectionEndProperty);
         set => SetValue(SelectionEndProperty, value);
+    }
+
+    public long NavigateToOffset
+    {
+        get => (long)GetValue(NavigateToOffsetProperty);
+        set => SetValue(NavigateToOffsetProperty, value);
+    }
+
+    public int NavigateToLength
+    {
+        get => (int)GetValue(NavigateToLengthProperty);
+        set => SetValue(NavigateToLengthProperty, value);
     }
 
     #endregion
@@ -265,6 +285,49 @@ public class HexView : Control
     {
         if (d is HexView view)
             view.RebuildRows();
+    }
+
+    private static void OnNavigateToOffsetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is HexView view && e.NewValue is long offset && offset >= 0)
+            view.NavigateTo(offset, view.NavigateToLength);
+    }
+
+    /// <summary>
+    /// 导航到指定偏移：居中显示 + 高亮指定长度的字节
+    /// </summary>
+    public void NavigateTo(long offset, int length = 1)
+    {
+        if (Buffer == null || RowList == null) return;
+
+        // 设置选中区间
+        Selection.ClearSelection();
+        Selection.BeginSelection(offset);
+        if (length > 1) Selection.ExtendSelection(offset + length - 1);
+
+        // 居中显示
+        var listBox = GetTemplateChild("PART_ListBox") as ListBox;
+        var scrollViewer = FindVisualChild<ScrollViewer>(listBox);
+        if (scrollViewer != null)
+        {
+            var rowIndex = (int)(offset / BytesPerRow);
+            var viewportRows = Math.Max(1, (int)(scrollViewer.ViewportHeight / 20)); // ~20px/行
+            var targetRow = Math.Max(0, rowIndex - viewportRows / 2);
+            scrollViewer.ScrollToVerticalOffset(targetRow);
+        }
+    }
+
+    private static T? FindVisualChild<T>(System.Windows.DependencyObject? parent) where T : System.Windows.DependencyObject
+    {
+        if (parent == null) return null;
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+            if (child is T t) return t;
+            var found = FindVisualChild<T>(child);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     private static void OnScrollOffsetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
