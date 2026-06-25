@@ -6,6 +6,7 @@ using FileStruct.Services.Configuration;
 using FileStruct.Services.FileManagement;
 using FileStruct.Services.ProjectManagement;
 using FileStruct.Services.StructureRecognition;
+using FileStruct.Services.EditService;
 using FileStruct.App.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -45,6 +46,10 @@ public partial class App : Application
         services.AddSingleton<IHeuristicEngine, HeuristicEngine>();
         services.AddSingleton<IConfidenceScorer, ConfidenceScorer>();
         services.AddSingleton<IStructureRecognizer, StructureRecognizer>();
+
+        // V1.0 编辑服务
+        services.AddSingleton<IUndoRedoService, UndoRedoService>();
+        services.AddSingleton<IEditService, EditService>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();
