@@ -2,6 +2,43 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:controls="clr-namespace:FileStruct.App.Controls">
 
+    <!-- 十六进制行数据模板 -->
+    <DataTemplate x:Key="HexRowTemplate">
+        <Border x:Name="RowBorder" Height="20">
+            <Grid Margin="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="*" MinWidth="300"/>
+                    <ColumnDefinition Width="120"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 偏移列 -->
+                <TextBlock Grid.Column="0"
+                           Text="{Binding OffsetString}"
+                           FontFamily="Cascadia Code"
+                           FontSize="13"
+                           Foreground="#888"
+                           Margin="4,0"/>
+
+                <!-- 十六进制列 -->
+                <TextBlock Grid.Column="1"
+                           Text="{Binding HexString}"
+                           FontFamily="Cascadia Code"
+                           FontSize="13"
+                           Foreground="#333"
+                           Margin="8,0,0,0"/>
+
+                <!-- ASCII 列 -->
+                <TextBlock Grid.Column="2"
+                           Text="{Binding AsciiString}"
+                           FontFamily="Cascadia Code"
+                           FontSize="13"
+                           Foreground="#555"
+                           Margin="8,0,0,0"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
     <!-- HexView 默认样式 -->
     <Style TargetType="controls:HexView">
         <Setter Property="Template">
@@ -10,19 +47,21 @@
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
-                        <ScrollViewer x:Name="PART_ScrollViewer"
-                                      VerticalScrollBarVisibility="Visible"
-                                      HorizontalScrollBarVisibility="Auto">
-                            <ItemsControl x:Name="PART_ItemsControl"
-                                          FontFamily="Cascadia Code"
-                                          FontSize="13">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding}"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
+                        <ListBox x:Name="PART_ListBox"
+                                 VirtualizingStackPanel.IsVirtualizing="True"
+                                 VirtualizingStackPanel.VirtualizationMode="Standard"
+                                 ScrollViewer.IsDeferredScrollingEnabled="True"
+                                 ScrollViewer.CanContentScroll="True"
+                                 ItemTemplate="{StaticResource HexRowTemplate}"
+                                 BorderThickness="0"
+                                 Background="White"
+                                 FontSize="13">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                        </ListBox>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

@@ -1,15 +1,11 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Input;
+using System.Collections;
 using FileStruct.Core.Models;
 
 namespace FileStruct.App.Controls;
 
-/// <summary>
-/// 虚拟化十六进制编辑器自定义控件
-/// 使用 VirtualizingStackPanel 实现仅渲染视口行，支持 200MB 大文件流畅滚动
-/// </summary>
 public class HexView : Control
 {
     static HexView()
@@ -39,121 +35,82 @@ public class HexView : Control
 
     public static readonly DependencyProperty ScrollOffsetProperty =
         DependencyProperty.Register(nameof(ScrollOffset), typeof(long),
-            typeof(HexView), new PropertyMetadata(0L));
+            typeof(HexView), new PropertyMetadata(0L, OnScrollOffsetChanged));
 
-    /// <summary>二进制数据缓冲区</summary>
+    public static readonly DependencyProperty SelectedOffsetProperty =
+        DependencyProperty.Register(nameof(SelectedOffset), typeof(long),
+            typeof(HexView), new PropertyMetadata(-1L));
+
     public BinaryBuffer? Buffer
     {
         get => (BinaryBuffer?)GetValue(BufferProperty);
         set => SetValue(BufferProperty, value);
     }
 
-    /// <summary>每行显示的字节数</summary>
     public int BytesPerRow
     {
         get => (int)GetValue(BytesPerRowProperty);
         set => SetValue(BytesPerRowProperty, value);
     }
 
-    /// <summary>字节分组大小 (1/2/4/8)</summary>
     public int ByteGroupSize
     {
         get => (int)GetValue(ByteGroupSizeProperty);
         set => SetValue(ByteGroupSizeProperty, value);
     }
 
-    /// <summary>当前滚动偏移（字节）</summary>
     public long ScrollOffset
     {
         get => (long)GetValue(ScrollOffsetProperty);
         set => SetValue(ScrollOffsetProperty, value);
     }
 
+    public long SelectedOffset
+    {
+        get => (long)GetValue(SelectedOffsetProperty);
+        set => SetValue(SelectedOffsetProperty, value);
+    }
+
     #endregion
 
     #region 属性
 
-    /// <summary>总行数</summary>
-    public long TotalRows => Buffer == null ? 0 :
-        (Buffer.Length + BytesPerRow - 1) / BytesPerRow;
-
-    /// <summary>选择管理器</summary>
     public SelectionManager Selection { get; }
 
-    #endregion
-
-    #region 事件
-
-    public event EventHandler<Controls.SelectionChangedEventArgs>? SelectionChanged
-    {
-        add => Selection.SelectionChanged += value;
-        remove => Selection.SelectionChanged -= value;
-    }
+    /// <summary>行数据源（供虚拟化 ItemsControl 使用）</summary>
+    public HexRowList? RowList { get; private set; }
 
     #endregion
 
     #region 方法
 
-    /// <summary>
-    /// 获取指定行的字节数据
-    /// </summary>
-    public byte[] GetRowData(long rowIndex)
+    public override void OnApplyTemplate()
     {
-        if (Buffer == null) return [];
-        var offset = rowIndex * BytesPerRow;
-        var count = (int)Math.Min(BytesPerRow, Buffer.Length - offset);
-        if (count <= 0) return [];
-        return Buffer.ReadBytes(offset, count);
+        base.OnApplyTemplate();
+        RebuildRows();
     }
 
-    /// <summary>
-    /// 将行索引转换为显示字符串
-    /// </summary>
-    public string FormatOffset(long rowIndex)
+    private void RebuildRows()
     {
-        return $"{rowIndex * BytesPerRow:X8}";
-    }
+        if (Buffer == null) return;
 
-    /// <summary>
-    /// 将字节数组格式化为十六进制字符串（含分组空格）
-    /// </summary>
-    public string FormatHex(byte[] data)
-    {
-        if (data.Length == 0) return "";
-        var parts = new List<string>();
-        for (int i = 0; i < data.Length; i += ByteGroupSize)
+        RowList = new HexRowList(Buffer, BytesPerRow, ByteGroupSize);
+
+        var listBox = GetTemplateChild("PART_ListBox") as ListBox;
+        if (listBox != null)
         {
-            var sb = new System.Text.StringBuilder();
-            for (int j = 0; j < ByteGroupSize && i + j < data.Length; j++)
-            {
-                sb.Append(data[i + j].ToString("X2"));
-            }
-            parts.Add(sb.ToString());
+            listBox.ItemsSource = RowList;
         }
-        return string.Join(" ", parts);
     }
 
-    /// <summary>
-    /// 将字节数组格式化为 ASCII 字符串（不可打印字符替换为 .）
-    /// </summary>
-    public string FormatAscii(byte[] data)
+    private void ScrollToRow(long offset)
     {
-        var chars = new char[data.Length];
-        for (int i = 0; i < data.Length; i++)
-            chars[i] = data[i] >= 0x20 && data[i] <= 0x7E ? (char)data[i] : '.';
-        return new string(chars);
-    }
+        if (RowList == null || Buffer == null) return;
+        var rowIndex = (int)(offset / BytesPerRow);
+        if (rowIndex < 0 || rowIndex >= RowList.Count) return;
 
-    /// <summary>
-    /// 将字节按分组大小填充为完整宽度字符串（用于对齐）
-    /// </summary>
-    public string FormatHexAligned(byte[] data)
-    {
-        if (data.Length == 0) return "";
-        var totalGroupSlots = (BytesPerRow + ByteGroupSize - 1) / ByteGroupSize;
-        var filledData = new byte[totalGroupSlots * ByteGroupSize];
-        data.CopyTo(filledData, 0);
-        return FormatHex(filledData);
+        var listBox = GetTemplateChild("PART_ListBox") as ListBox;
+        listBox?.ScrollIntoView(RowList[rowIndex]);
     }
 
     #endregion
@@ -166,9 +123,107 @@ public class HexView : Control
         {
             view.ScrollOffset = 0;
             view.Selection.ClearSelection();
-            view.InvalidateVisual();
+            view.RebuildRows();
+        }
+    }
+
+    private static void OnScrollOffsetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is HexView view && e.NewValue is long offset)
+        {
+            view.ScrollToRow(offset);
         }
     }
 
     #endregion
+}
+
+/// <summary>
+/// 虚拟化行数据源 — 不预加载所有行，按需从 BinaryBuffer 读取
+/// </summary>
+public class HexRowList : IList
+{
+    private readonly BinaryBuffer _buffer;
+    private readonly int _bytesPerRow;
+    private readonly int _byteGroupSize;
+
+    public HexRowList(BinaryBuffer buffer, int bytesPerRow, int byteGroupSize)
+    {
+        _buffer = buffer;
+        _bytesPerRow = bytesPerRow;
+        _byteGroupSize = byteGroupSize;
+    }
+
+    public int Count => (int)((_buffer.Length + _bytesPerRow - 1) / _bytesPerRow);
+    public bool IsSynchronized => false;
+    public object SyncRoot => this;
+    public bool IsFixedSize => true;
+    public bool IsReadOnly => true;
+
+    public object? this[int index]
+    {
+        get => index >= 0 && index < Count ? BuildRow(index) : null;
+        set => throw new NotSupportedException();
+    }
+
+    private HexRowData BuildRow(int rowIndex)
+    {
+        var offset = rowIndex * _bytesPerRow;
+        var count = (int)Math.Min(_bytesPerRow, _buffer.Length - offset);
+        var data = count > 0 ? _buffer.ReadBytes(offset, count) : [];
+
+        // 偏移列
+        var offsetStr = $"{offset:X8}";
+
+        // 十六进制列
+        var hexParts = new List<string>();
+        for (int i = 0; i < _bytesPerRow; i += _byteGroupSize)
+        {
+            var sb = new System.Text.StringBuilder();
+            for (int j = 0; j < _byteGroupSize && i + j < data.Length; j++)
+                sb.Append(data[i + j].ToString("X2"));
+            hexParts.Add(sb.ToString());
+        }
+        var hexStr = string.Join(" ", hexParts);
+
+        // ASCII 列
+        var asciiChars = new char[data.Length];
+        for (int i = 0; i < data.Length; i++)
+            asciiChars[i] = data[i] >= 0x20 && data[i] <= 0x7E ? (char)data[i] : '.';
+
+        return new HexRowData
+        {
+            OffsetString = offsetStr,
+            HexString = hexStr,
+            AsciiString = new string(asciiChars),
+            RowByteCount = data.Length,
+        };
+    }
+
+    public int Add(object? value) => throw new NotSupportedException();
+    public void Clear() { }
+    public bool Contains(object? value) => false;
+    public int IndexOf(object? value) => -1;
+    public void Insert(int index, object? value) => throw new NotSupportedException();
+    public void Remove(object? value) => throw new NotSupportedException();
+    public void RemoveAt(int index) => throw new NotSupportedException();
+
+    public void CopyTo(Array array, int index) { }
+    public IEnumerator GetEnumerator()
+    {
+        for (int i = 0; i < Count; i++)
+            yield return BuildRow(i);
+    }
+}
+
+/// <summary>
+/// 单行十六进制数据（不可变 DTO）
+/// </summary>
+public class HexRowData
+{
+    public string OffsetString { get; init; } = "";
+    public string HexString { get; init; } = "";
+    public string AsciiString { get; init; } = "";
+    public int RowByteCount { get; init; }
+    public bool IsCompleteRow => RowByteCount >= 16;
 }

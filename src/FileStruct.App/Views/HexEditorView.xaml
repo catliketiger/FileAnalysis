@@ -4,7 +4,6 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:controls="clr-namespace:FileStruct.App.Controls"
-             xmlns:converters="clr-namespace:FileStruct.App.Converters"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="800">
     <Grid>
@@ -16,7 +15,7 @@
         <!-- 工具栏 -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="4">
             <Label Content="分组:" VerticalAlignment="Center"/>
-            <ComboBox x:Name="GroupSizeCombo" SelectedIndex="1" Width="60"
+            <ComboBox SelectedIndex="1" Width="60"
                       VerticalAlignment="Center" Margin="4,0">
                 <ComboBoxItem Tag="1">1</ComboBoxItem>
                 <ComboBoxItem Tag="2" IsSelected="True">2</ComboBoxItem>
@@ -24,18 +23,14 @@
                 <ComboBoxItem Tag="8">8</ComboBoxItem>
             </ComboBox>
             <Separator Width="1" Background="#CCC" Margin="8,4"/>
-            <CheckBox x:Name="EndianCheck" Content="小端" IsChecked="True"
+            <CheckBox Content="小端" IsChecked="True"
                       VerticalAlignment="Center"/>
         </StackPanel>
 
-        <!-- 十六进制视图容器 -->
-        <ScrollViewer Grid.Row="1" x:Name="HexScrollViewer"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Auto"
-                      Background="White">
-            <controls:HexView x:Name="HexViewControl"
-                              Width="1200"
-                              Height="Auto"/>
-        </ScrollViewer>
+        <!-- 十六进制视图 -->
+        <controls:HexView Grid.Row="1"
+                          x:Name="HexViewControl"
+                          Buffer="{Binding HexEditor.Buffer}"
+                          ByteGroupSize="{Binding HexEditor.ByteGroupSize}"/>
     </Grid>
 </UserControl>

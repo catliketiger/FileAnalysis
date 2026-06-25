@@ -19,7 +19,7 @@
 
         <!-- 结构树 -->
         <TreeView Grid.Row="1" x:Name="StructTree"
-                  ItemsSource="{Binding RootItems}"
+                  ItemsSource="{Binding StructureTree.RootItems}"
                   BorderThickness="1"
                   FontSize="12">
             <TreeView.Resources>
