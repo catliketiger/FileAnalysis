@@ -82,12 +82,13 @@ public partial class LivePreviewViewModel : ObservableObject
         try
         {
             var gbkBytes = buffer.ReadBytes(offset, Math.Min(length, 16));
-            var gbkStr = Encoding.GetEncoding("gb2312").GetString(gbkBytes);
+            var gbkEnc = Encoding.GetEncoding(936); // 936 = GBK codepage
+            var gbkStr = gbkEnc.GetString(gbkBytes);
             GbkValue = gbkStr.Contains('\0') ? gbkStr.Replace("\0", "\\0") : gbkStr;
         }
         catch
         {
-            GbkValue = "";
+            GbkValue = "(不可用)";
         }
 
         var sb = new StringBuilder();
