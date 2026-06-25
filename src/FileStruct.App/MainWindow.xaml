@@ -68,10 +68,9 @@
             <Separator/>
             <Button Content="💾 保存" Command="{Binding SaveProjectCommand}"/>
             <Separator/>
-            <Label Content="跳转: " VerticalAlignment="Center"/>
+            <Label Content="偏移(0x): " VerticalAlignment="Center" FontSize="11"/>
             <TextBox Text="{Binding GotoOffsetText, UpdateSourceTrigger=PropertyChanged}"
-                     Width="120" VerticalAlignment="Center"
-                     ToolTip="输入偏移地址(十进制 或 0x十六进制)">
+                     Width="110" VerticalAlignment="Center">
                 <TextBox.InputBindings>
                     <KeyBinding Key="Enter" Command="{Binding GoToOffsetCommand}"/>
                 </TextBox.InputBindings>

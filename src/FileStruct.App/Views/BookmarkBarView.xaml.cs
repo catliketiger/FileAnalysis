@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using FileStruct.App.ViewModels;
 using FileStruct.Core.Models;
 
@@ -9,41 +8,33 @@ namespace FileStruct.App.Views;
 
 public partial class BookmarkBarView : UserControl
 {
-    private DateTime _lastClickTime;
+    private DateTime _lastClick;
 
     public BookmarkBarView()
     {
         InitializeComponent();
-        BookmarkList.PreviewMouseLeftButtonDown += OnBookmarkPreviewClick;
+        // 使用 PreviewMouseLeftButtonUp 避免 ListBox 内置事件处理干扰
+        BookmarkList.PreviewMouseLeftButtonUp += OnBookmarkClick;
     }
 
-    private void OnBookmarkPreviewClick(object sender, MouseButtonEventArgs e)
+    private void OnBookmarkClick(object sender, MouseButtonEventArgs e)
     {
-        // 通过 OriginalSource 找到所在的 ListBoxItem
-        var element = e.OriginalSource as DependencyObject;
-        while (element != null && element is not ListBoxItem)
-            element = VisualTreeHelper.GetParent(element);
+        if (BookmarkList.SelectedItem is not Bookmark bookmark) return;
 
-        if (element is not ListBoxItem item || item.DataContext is not Bookmark bookmark)
-            return;
-
-        // 双击检测：两次点击间隔 < 500ms
         var now = DateTime.UtcNow;
-        var isDoubleClick = (now - _lastClickTime).TotalMilliseconds < 500;
-        _lastClickTime = now;
+        var isDoubleClick = (now - _lastClick).TotalMilliseconds < 500;
+        _lastClick = now;
 
         if (!isDoubleClick) return;
 
-        // 跳转到书签偏移
         var win = Window.GetWindow(this);
-        if (win?.DataContext is MainViewModel mainVm)
+        if (win?.DataContext is MainViewModel vm)
         {
-            mainVm.HexEditor.NavigateToOffset = bookmark.Offset;
-            mainVm.HexEditor.NavigateToLength = 1;
-            mainVm.HexEditor.SelectionInfo = $"书签: {bookmark.Name} @ 0x{bookmark.Offset:X}";
-            mainVm.StatusText = $"已跳转到书签: {bookmark.Name}";
+            vm.HexEditor.NavigateToOffset = bookmark.Offset;
+            vm.HexEditor.NavigateToLength = 1;
+            vm.HexEditor.SelectionInfo = $"书签: {bookmark.Name} @ 0x{bookmark.Offset:X}";
+            vm.StatusText = $"已跳转到书签: {bookmark.Name}";
+            e.Handled = true;
         }
-
-        e.Handled = true;
     }
 }
