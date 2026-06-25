@@ -28,6 +28,8 @@ public partial class HexEditorView : UserControl
             mainVm.StructureTree.SelectNodeByOffset(args.StartOffset);
 
             // 更新选择信息
+            mainVm.HexEditor.SelectionStart = args.StartOffset;
+            mainVm.HexEditor.SelectionLength = args.Length;
             mainVm.HexEditor.SelectionInfo = $"选中: 偏移 0x{args.StartOffset:X}, 长度 {args.Length} 字节";
         };
     }

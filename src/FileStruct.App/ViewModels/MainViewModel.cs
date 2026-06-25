@@ -295,6 +295,35 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void CopyHex()
+    {
+        if (_buffer == null || HexEditor.SelectionStart < 0 || HexEditor.SelectionLength <= 0) return;
+        var bytes = _buffer.ReadBytes(HexEditor.SelectionStart, (int)Math.Min(HexEditor.SelectionLength, 1024 * 1024));
+        var hex = BitConverter.ToString(bytes).Replace("-", " ");
+        System.Windows.Clipboard.SetText(hex);
+        StatusText = $"已复制 {bytes.Length} 字节的十六进制值到剪贴板";
+    }
+
+    [RelayCommand]
+    private void CopyAscii()
+    {
+        if (_buffer == null || HexEditor.SelectionStart < 0 || HexEditor.SelectionLength <= 0) return;
+        var bytes = _buffer.ReadBytes(HexEditor.SelectionStart, (int)Math.Min(HexEditor.SelectionLength, 1024 * 1024));
+        var ascii = new string(bytes.Select(b => b >= 0x20 && b <= 0x7E ? (char)b : '.').ToArray());
+        System.Windows.Clipboard.SetText(ascii);
+        StatusText = $"已复制 {ascii.Length} 字节的 ASCII 值到剪贴板";
+    }
+
+    [RelayCommand]
+    private void AddBookmark()
+    {
+        if (_buffer == null || HexEditor.SelectionStart < 0) return;
+        var name = $"偏移 0x{HexEditor.SelectionStart:X}";
+        BookmarkList.AddBookmark(name, HexEditor.SelectionStart);
+        StatusText = $"已添加书签: {name}";
+    }
+
+    [RelayCommand]
     private async Task RecognizeAsync()
     {
         if (_buffer == null) return;

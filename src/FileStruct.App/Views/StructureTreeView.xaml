@@ -15,7 +15,7 @@
         <!-- 搜索框 -->
         <TextBox Grid.Row="0" x:Name="SearchBox"
                  Margin="4" Padding="4"
-                 Text=""/>
+                 Text="" KeyDown="SearchBox_KeyDown"/>
 
         <!-- 结构树 -->
         <TreeView Grid.Row="1" x:Name="StructTree"
@@ -29,6 +29,7 @@
                         <TextBlock Text="{Binding Name}" FontWeight="Bold" Margin="0,0,4,0"/>
                         <TextBlock Text="{Binding Offset, StringFormat={}0x{0:X}}" Foreground="Gray" Margin="0,0,4,0"/>
                         <TextBlock Text="{Binding Length, StringFormat={}[{0}]}" Foreground="DarkGray"/>
+                        <TextBlock Text="{Binding DataType}" Foreground="Blue" Margin="4,0,0,0"/>
                     </StackPanel>
                 </HierarchicalDataTemplate>
             </TreeView.Resources>

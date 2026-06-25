@@ -31,6 +31,36 @@ public partial class StructureTreeViewModel : ObservableObject
     }
 
     /// <summary>
+    /// 搜索树节点（按名称匹配，不区分大小写）
+    /// </summary>
+    public bool SearchTree(string searchText)
+    {
+        if (RootNode == null || string.IsNullOrWhiteSpace(searchText)) return false;
+
+        var found = FindByName(RootNode, searchText);
+        if (found != null)
+        {
+            SelectedNode = found;
+            ExpandPathToNode(found);
+            return true;
+        }
+        return false;
+    }
+
+    private static StructureNode? FindByName(StructureNode node, string searchText)
+    {
+        if (node.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            return node;
+
+        foreach (var child in node.Children)
+        {
+            var found = FindByName(child, searchText);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    /// <summary>
     /// 清除树
     /// </summary>
     public void Clear()

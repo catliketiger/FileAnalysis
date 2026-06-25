@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using FileStruct.App.ViewModels;
 
 namespace FileStruct.App.Views;
@@ -18,10 +19,19 @@ public partial class StructureTreeView : UserControl
             DataContext is MainViewModel mainVm)
         {
             var node = item.Node;
-            // 计算目标滚动偏移（对齐到行首）
             var scrollOffset = (node.Offset / 16) * 16;
             mainVm.HexEditor.ScrollOffset = scrollOffset;
             mainVm.HexEditor.SelectionInfo = $"字段: {node.Name} @ 0x{node.Offset:X}, 长度 {node.Length}";
+        }
+    }
+
+    private void SearchBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && DataContext is MainViewModel mainVm)
+        {
+            var found = mainVm.StructureTree.SearchTree(SearchBox.Text);
+            if (!found)
+                mainVm.StatusText = $"未找到匹配的字段: {SearchBox.Text}";
         }
     }
 }

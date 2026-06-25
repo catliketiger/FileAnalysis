@@ -11,6 +11,8 @@
 
     <Window.InputBindings>
         <KeyBinding Key="G" Modifiers="Control" Command="{Binding GoToOffsetCommand}"/>
+        <KeyBinding Key="C" Modifiers="Control+Shift" Command="{Binding CopyHexCommand}"/>
+        <KeyBinding Key="B" Modifiers="Control" Command="{Binding AddBookmarkCommand}"/>
     </Window.InputBindings>
 
     <Grid>
@@ -40,7 +42,13 @@
             <MenuItem Header="编辑(_E)">
                 <MenuItem Header="跳转到偏移(_G)" InputGestureText="Ctrl+G"
                           Command="{Binding GoToOffsetCommand}"/>
-                <MenuItem Header="复制十六进制(_H)" InputGestureText="Ctrl+Shift+C"/>
+                <MenuItem Header="复制十六进制(_H)" InputGestureText="Ctrl+Shift+C"
+                          Command="{Binding CopyHexCommand}"/>
+                <MenuItem Header="复制 ASCII(_A)" InputGestureText=""
+                          Command="{Binding CopyAsciiCommand}"/>
+                <Separator/>
+                <MenuItem Header="添加书签(_B)" InputGestureText="Ctrl+B"
+                          Command="{Binding AddBookmarkCommand}"/>
             </MenuItem>
             <MenuItem Header="视图(_V)">
                 <MenuItem Header="结构识别(_R)" Command="{Binding RecognizeCommand}"/>

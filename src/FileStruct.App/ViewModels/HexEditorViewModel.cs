@@ -1,12 +1,8 @@
-using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FileStruct.Core.Models;
 
 namespace FileStruct.App.ViewModels;
 
-/// <summary>
-/// 十六进制编辑器视图模型
-/// </summary>
 public partial class HexEditorViewModel : ObservableObject
 {
     [ObservableProperty]
@@ -28,6 +24,12 @@ public partial class HexEditorViewModel : ObservableObject
     private string _selectionInfo = "";
 
     [ObservableProperty]
+    private long _selectionStart = -1;
+
+    [ObservableProperty]
+    private long _selectionLength;
+
+    [ObservableProperty]
     private long _totalBytes;
 
     partial void OnBufferChanged(BinaryBuffer? value)
@@ -35,5 +37,7 @@ public partial class HexEditorViewModel : ObservableObject
         TotalBytes = value?.Length ?? 0;
         ScrollOffset = 0;
         SelectionInfo = "";
+        SelectionStart = -1;
+        SelectionLength = 0;
     }
 }
