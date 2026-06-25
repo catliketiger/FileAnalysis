@@ -15,16 +15,17 @@
         <!-- 工具栏 -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="4">
             <Label Content="分组:" VerticalAlignment="Center"/>
-            <ComboBox SelectedIndex="1" Width="60"
-                      VerticalAlignment="Center" Margin="4,0">
+            <ComboBox Width="60" VerticalAlignment="Center" Margin="4,0"
+                      SelectedIndex="1"
+                      SelectionChanged="GroupSizeCombo_SelectionChanged">
                 <ComboBoxItem Tag="1">1</ComboBoxItem>
                 <ComboBoxItem Tag="2" IsSelected="True">2</ComboBoxItem>
                 <ComboBoxItem Tag="4">4</ComboBoxItem>
                 <ComboBoxItem Tag="8">8</ComboBoxItem>
             </ComboBox>
             <Separator Width="1" Background="#CCC" Margin="8,4"/>
-            <CheckBox Content="小端" IsChecked="True"
-                      VerticalAlignment="Center"/>
+            <CheckBox Content="小端" VerticalAlignment="Center"
+                      IsChecked="{Binding HexEditor.IsLittleEndian}"/>
         </StackPanel>
 
         <!-- 十六进制视图 -->

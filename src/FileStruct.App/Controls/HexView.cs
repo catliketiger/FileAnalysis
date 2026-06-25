@@ -31,7 +31,7 @@ public class HexView : Control
 
     public static readonly DependencyProperty ByteGroupSizeProperty =
         DependencyProperty.Register(nameof(ByteGroupSize), typeof(int),
-            typeof(HexView), new PropertyMetadata(2));
+            typeof(HexView), new PropertyMetadata(2, OnByteGroupSizeChanged));
 
     public static readonly DependencyProperty ScrollOffsetProperty =
         DependencyProperty.Register(nameof(ScrollOffset), typeof(long),
@@ -130,6 +130,12 @@ public class HexView : Control
             view.Selection.ClearSelection();
             view.RebuildRows();
         }
+    }
+
+    private static void OnByteGroupSizeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is HexView view)
+            view.RebuildRows();
     }
 
     private static void OnScrollOffsetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
