@@ -1,0 +1,63 @@
+<UserControl x:Class="FileStruct.App.Views.LivePreviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="400" d:DesignWidth="250">
+    <Border BorderBrush="#DDD" BorderThickness="1" Margin="4,0,0,0">
+        <Grid Margin="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0" Background="#F5F5F5" Padding="4" Margin="0,0,0,8">
+                <TextBlock Text="实时解码预览" FontWeight="Bold" FontSize="12"/>
+            </Border>
+
+            <ScrollViewer Grid.Row="1">
+                <Grid>
+                    <StackPanel TextBlock.FontSize="11" TextBlock.FontFamily="Consolas"
+                                Visibility="{Binding HasData, Converter={StaticResource BoolToVisibility}}">
+                        <Label FontWeight="Bold" Content="Hex"/>
+                        <TextBlock Text="{Binding HexValue}" Margin="4,0,0,8"/>
+
+                        <Separator/>
+                        <Label FontWeight="Bold" Content="uint8"/>
+                        <TextBlock Text="{Binding Uint8Value}" Margin="4,0,0,8"/>
+
+                        <Label FontWeight="Bold" Content="int16"/>
+                        <TextBlock Text="{Binding Int16Value}" Margin="4,0,0,8"/>
+
+                        <Label FontWeight="Bold" Content="int32"/>
+                        <TextBlock Text="{Binding Int32Value}" Margin="4,0,0,8"/>
+
+                        <Label FontWeight="Bold" Content="uint32"/>
+                        <TextBlock Text="{Binding Uint32Value}" Margin="4,0,0,8"/>
+
+                        <Label FontWeight="Bold" Content="float"/>
+                        <TextBlock Text="{Binding FloatValue}" Margin="4,0,0,8"/>
+
+                        <Separator/>
+                        <Label FontWeight="Bold" Content="ASCII"/>
+                        <TextBlock Text="{Binding AsciiValue}" Margin="4,0,0,8"/>
+
+                        <Label FontWeight="Bold" Content="UTF-8"/>
+                        <TextBlock Text="{Binding Utf8Value}" Margin="4,0,0,8" TextWrapping="Wrap"/>
+
+                        <Separator/>
+                        <Label FontWeight="Bold" Content="Binary"/>
+                        <TextBlock Text="{Binding BinaryValue}" Margin="4,0,0,8"/>
+
+                        <Label FontWeight="Bold" Content="Timestamp (Unix32)"/>
+                        <TextBlock Text="{Binding Timestamp32Value}" Margin="4,0,0,8"/>
+                    </StackPanel>
+
+                    <TextBlock Text="选择字节以查看解码值"
+                               Visibility="{Binding HasData, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"
+                               Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</UserControl>

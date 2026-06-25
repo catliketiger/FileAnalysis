@@ -55,6 +55,8 @@
                 <ColumnDefinition Width="280" MinWidth="200"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="250" MinWidth="180"/>
             </Grid.ColumnDefinitions>
 
             <!-- 左侧面板：结构树 -->
@@ -71,7 +73,6 @@
                 </Grid>
             </Border>
 
-            <!-- 分割线 -->
             <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center"
                           ShowsPreview="False" Background="Transparent"/>
 
@@ -83,6 +84,24 @@
                     </TabItem>
                     <TabItem Header="文本视图">
                         <views:TextView x:Name="TextView"/>
+                    </TabItem>
+                </TabControl>
+            </Grid>
+
+            <GridSplitter Grid.Column="3" Width="4" HorizontalAlignment="Center"
+                          ShowsPreview="False" Background="Transparent"/>
+
+            <!-- 右侧面板：预览 + 工具 -->
+            <Grid Grid.Column="4">
+                <TabControl Margin="0,0,0,4">
+                    <TabItem Header="预览">
+                        <views:LivePreviewView DataContext="{Binding LivePreview}"/>
+                    </TabItem>
+                    <TabItem Header="转换">
+                        <views:AuxToolsView DataContext="{Binding AuxTools}"/>
+                    </TabItem>
+                    <TabItem Header="书签">
+                        <views:BookmarkBarView DataContext="{Binding BookmarkList}"/>
                     </TabItem>
                 </TabControl>
             </Grid>

@@ -1,0 +1,59 @@
+<UserControl x:Class="FileStruct.App.Views.AuxToolsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="200" d:DesignWidth="400">
+    <Border BorderBrush="#DDD" BorderThickness="1" Padding="8" Margin="4">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="进制转换" FontWeight="Bold" FontSize="12" Margin="0,0,0,8"/>
+
+            <TextBox Grid.Row="1" Text="{Binding InputValue}" Margin="0,0,0,4"
+                     FontFamily="Consolas" FontSize="13">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding ConvertCommand}"/>
+                </TextBox.InputBindings>
+            </TextBox>
+
+            <Button Grid.Row="2" Content="转换" Command="{Binding ConvertCommand}"
+                    Height="24" Margin="0,0,0,4"/>
+
+            <Grid Grid.Row="3" Margin="0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="十进制:" FontWeight="Bold"/>
+                <TextBlock Grid.Column="1" Text="{Binding DecimalValue}" FontFamily="Consolas"/>
+            </Grid>
+
+            <Grid Grid.Row="4" Margin="0,2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="十六进制:" FontWeight="Bold"/>
+                <TextBlock Grid.Column="1" Text="{Binding HexValue}" FontFamily="Consolas"/>
+            </Grid>
+
+            <Grid Grid.Row="5" Margin="0,2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="二进制:" FontWeight="Bold"/>
+                <TextBlock Grid.Column="1" Text="{Binding BinaryValue}" FontFamily="Consolas"/>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

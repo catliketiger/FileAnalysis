@@ -54,6 +54,15 @@ public partial class MainViewModel : ObservableObject
     private StructureTreeViewModel _structureTree = new();
 
     [ObservableProperty]
+    private LivePreviewViewModel _livePreview = new();
+
+    [ObservableProperty]
+    private AuxToolsViewModel _auxTools = new();
+
+    [ObservableProperty]
+    private BookmarkViewModel _bookmarkList = new();
+
+    [ObservableProperty]
     private bool _isRecognizing;
 
     [RelayCommand]

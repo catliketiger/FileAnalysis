@@ -1,11 +1,18 @@
 <Application x:Class="FileStruct.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:FileStruct.App.Converters">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Styles/Generic.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- 全局值转换器 -->
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+            <converters:FileSizeConverter x:Key="FileSizeConverter"/>
+            <converters:ConfidenceToColorConverter x:Key="ConfidenceToColor"/>
+            <converters:ConfidenceToPercentConverter x:Key="ConfidenceToPercent"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
