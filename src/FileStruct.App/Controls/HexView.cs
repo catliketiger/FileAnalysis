@@ -92,11 +92,16 @@ public class HexView : Control
 
     private void RebuildRows()
     {
-        if (Buffer == null) return;
+        var listBox = GetTemplateChild("PART_ListBox") as ListBox;
+
+        if (Buffer == null)
+        {
+            RowList = null;
+            if (listBox != null) listBox.ItemsSource = null;
+            return;
+        }
 
         RowList = new HexRowList(Buffer, BytesPerRow, ByteGroupSize);
-
-        var listBox = GetTemplateChild("PART_ListBox") as ListBox;
         if (listBox != null)
         {
             listBox.ItemsSource = RowList;

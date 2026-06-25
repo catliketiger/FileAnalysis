@@ -210,6 +210,36 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void Exit()
+    {
+        CloseFile();
+        System.Windows.Application.Current.Shutdown();
+    }
+
+    [RelayCommand]
+    private void CloseFile()
+    {
+        if (_buffer == null) return;
+
+        var fileName = _buffer.FileName;
+        _buffer.Dispose();
+        _buffer = null;
+
+        // 清除各视图
+        HexEditor.Buffer = null;
+        HexEditor.FileType = null;
+        TextView.Clear();
+        StructureTree.Clear();
+        LivePreview.Clear();
+
+        IsFileLoaded = false;
+        WindowTitle = "FileStruct - 二进制文件结构化分析工具";
+        FileInfoText = "";
+        StatusText = "文件已关闭";
+        _logger.Info($"文件已关闭: {fileName}");
+    }
+
+    [RelayCommand]
     private async Task RecognizeAsync()
     {
         if (_buffer == null) return;

@@ -28,7 +28,10 @@
                 <MenuItem Header="打开项目(_P)" InputGestureText="Ctrl+P"
                           Command="{Binding OpenProjectCommand}"/>
                 <Separator/>
-                <MenuItem Header="退出(_X)"/>
+                <MenuItem Header="关闭文件(_C)" InputGestureText="Ctrl+W"
+                          Command="{Binding CloseFileCommand}"/>
+                <Separator/>
+                <MenuItem Header="退出(_X)" Command="{Binding ExitCommand}"/>
             </MenuItem>
             <MenuItem Header="视图(_V)">
                 <MenuItem Header="结构识别(_R)" Command="{Binding RecognizeCommand}"/>
