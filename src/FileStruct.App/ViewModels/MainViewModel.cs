@@ -289,7 +289,8 @@ public partial class MainViewModel : ObservableObject
                 return;
             }
 
-            HexEditor.ScrollOffset = (offset / 16) * 16;
+            HexEditor.NavigateToOffset = offset;
+            HexEditor.NavigateToLength = 1;
             HexEditor.SelectionInfo = $"跳转到: 0x{offset:X}";
             StatusText = $"已跳转到偏移 0x{offset:X}";
             GotoOffsetText = "";
