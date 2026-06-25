@@ -45,6 +45,9 @@
                         <Label FontWeight="Bold" Content="UTF-8"/>
                         <TextBlock Text="{Binding Utf8Value}" Margin="4,0,0,8" TextWrapping="Wrap"/>
 
+                        <Label FontWeight="Bold" Content="GBK"/>
+                        <TextBlock Text="{Binding GbkValue}" Margin="4,0,0,8" TextWrapping="Wrap"/>
+
                         <Separator/>
                         <Label FontWeight="Bold" Content="Binary"/>
                         <TextBlock Text="{Binding BinaryValue}" Margin="4,0,0,8"/>

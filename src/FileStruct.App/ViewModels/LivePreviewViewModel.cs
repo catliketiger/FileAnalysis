@@ -28,6 +28,9 @@ public partial class LivePreviewViewModel : ObservableObject
     private string _utf8Value = "";
 
     [ObservableProperty]
+    private string _gbkValue = "";
+
+    [ObservableProperty]
     private string _hexValue = "";
 
     [ObservableProperty]
@@ -75,6 +78,18 @@ public partial class LivePreviewViewModel : ObservableObject
         var utf8Str = Encoding.UTF8.GetString(utf8Bytes);
         Utf8Value = utf8Str.Contains('\0') ? utf8Str.Replace("\0", "\\0") : utf8Str;
 
+        // GBK 解码
+        try
+        {
+            var gbkBytes = buffer.ReadBytes(offset, Math.Min(length, 16));
+            var gbkStr = Encoding.GetEncoding("gb2312").GetString(gbkBytes);
+            GbkValue = gbkStr.Contains('\0') ? gbkStr.Replace("\0", "\\0") : gbkStr;
+        }
+        catch
+        {
+            GbkValue = "";
+        }
+
         var sb = new StringBuilder();
         for (int i = 0; i < Math.Min(length, 4); i++)
         {
@@ -88,6 +103,6 @@ public partial class LivePreviewViewModel : ObservableObject
     {
         HasData = false;
         Uint8Value = Int16Value = Int32Value = Uint32Value = "";
-        FloatValue = AsciiValue = Utf8Value = HexValue = BinaryValue = Timestamp32Value = "";
+        FloatValue = AsciiValue = Utf8Value = GbkValue = HexValue = BinaryValue = Timestamp32Value = "";
     }
 }
