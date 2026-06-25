@@ -1,0 +1,134 @@
+# ====================
+# .NET / C#
+# ====================
+
+# Build output
+bin/
+obj/
+
+# NuGet packages
+packages/
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+
+# NuGet cache
+.nuget/
+*.nuget.cache
+*.nuget.orig
+
+# NuGet fallback / local feed
+global-packages/
+.fallback folder/
+
+# ====================
+# Visual Studio
+# ====================
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# User-specific (VS2019/2022)
+*.userprefs
+
+# VS build cache
+.vs/
+*.DotSettings.user
+
+# VS Code
+.vscode/
+
+# Project-specific (Rider / macOS)
+.idea/
+*.sln.iml
+
+# ====================
+# WPF / Windows Forms
+# ====================
+
+# Designer cache
+*.cache
+DesignTimeResolveAssemblyReferencesInputs.cache
+
+# Temporary files
+*.tmp
+*.log
+*.tlog
+
+# ClickOnce / publishing
+*.publish/
+publish/
+**/PublishScripts/
+
+# ====================
+# Application output
+# ====================
+
+# Published artifacts
+*.exe
+*.exe.config
+*.dll
+*.pdb
+*.msi
+*.msp
+*.appx
+*.appinstaller
+
+# ====================
+# Project-specific: FileStruct
+# ====================
+
+# DEBUG log output (Serilog writes to logs/)
+logs/
+*.log
+
+# Application settings overrides (user-specific, not committed)
+appsettings.local.json
+*.local.json
+
+# Project files (user saves, not versioned with source)
+*.fstruct
+*.fstruct.bak
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Performance benchmark results
+BenchmarkDotNet.Artifacts/
+
+# ====================
+# OS files
+# ====================
+
+# Windows
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Linux
+*~
+.directory
+
+# ====================
+# Tooling
+# ====================
+
+# Python virtual env (for tools/gen-test-sample.py)
+venv/
+.venv/
+__pycache__/
+*.pyc
