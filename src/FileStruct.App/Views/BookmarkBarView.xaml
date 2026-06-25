@@ -24,10 +24,10 @@
                     Command="{Binding ClearAllCommand}"/>
         </StackPanel>
 
-        <ListBox Grid.Row="2" ItemsSource="{Binding Bookmarks}"
+        <ListBox Grid.Row="2" x:Name="BookmarkList"
+                 ItemsSource="{Binding Bookmarks}"
                  SelectedItem="{Binding SelectedBookmark}"
-                 BorderThickness="0" FontSize="11"
-                 MouseDoubleClick="BookmarkList_MouseDoubleClick">
+                 BorderThickness="0" FontSize="11">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">
