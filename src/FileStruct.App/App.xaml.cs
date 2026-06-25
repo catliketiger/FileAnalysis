@@ -1,3 +1,4 @@
+using System.Text;
 using System.Windows;
 using FileStruct.Core.Interfaces;
 using FileStruct.Infrastructure.Configuration;
@@ -21,6 +22,9 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // 注册编码提供程序（支持 GBK/GB2312/Shift-JIS 等）
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
         base.OnStartup(e);
 
         var services = new ServiceCollection();
