@@ -33,7 +33,7 @@
                      FontFamily="Consolas"
                      FontSize="13"
                      BorderThickness="0"
-                     Text="{Binding TextContent}"/>
+                     Text="{Binding TextView.TextContent}"/>
         </ScrollViewer>
     </Grid>
 </UserControl>
