@@ -266,6 +266,12 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _gotoOffsetText = "";
 
+    [ObservableProperty]
+    private string _searchText = "";
+
+    [ObservableProperty]
+    private string _searchResultText = "";
+
     [RelayCommand]
     private void GoToOffset()
     {
@@ -321,6 +327,81 @@ public partial class MainViewModel : ObservableObject
         var name = $"偏移 0x{HexEditor.SelectionStart:X}";
         BookmarkList.AddBookmark(name, HexEditor.SelectionStart);
         StatusText = $"已添加书签: {name}";
+    }
+
+    private List<long> _searchResults = [];
+    private int _searchResultIndex = -1;
+
+    [RelayCommand]
+    private void SearchBytes()
+    {
+        if (_buffer == null || string.IsNullOrWhiteSpace(SearchText)) return;
+
+        // 解析搜索模式：支持十六进制 ("48 65 6C") 或 ASCII 文本 (用引号包裹)
+        byte[] pattern;
+        if (SearchText.StartsWith('"') && SearchText.EndsWith('"'))
+        {
+            var text = SearchText[1..^1];
+            pattern = System.Text.Encoding.ASCII.GetBytes(text);
+        }
+        else
+        {
+            var hex = SearchText.Replace(" ", "").Replace("-", "");
+            if (hex.Length % 2 != 0) { SearchResultText = "无效的十六进制序列"; return; }
+            pattern = Convert.FromHexString(hex);
+        }
+
+        if (pattern.Length == 0) { SearchResultText = "搜索内容为空"; return; }
+
+        // 滑动窗口搜索
+        _searchResults.Clear();
+        _searchResultIndex = -1;
+
+        var buffer = _buffer;
+        for (long offset = 0; offset <= buffer.Length - pattern.Length; offset++)
+        {
+            var match = true;
+            for (int i = 0; i < pattern.Length; i++)
+            {
+                if (buffer.ReadByte(offset + i) != pattern[i])
+                {
+                    match = false;
+                    break;
+                }
+            }
+            if (match)
+            {
+                _searchResults.Add(offset);
+                // 限制结果数量防止卡顿
+                if (_searchResults.Count >= 1000) break;
+            }
+        }
+
+        if (_searchResults.Count == 0)
+        {
+            SearchResultText = "未找到匹配";
+            return;
+        }
+
+        _searchResultIndex = 0;
+        JumpToSearchResult();
+    }
+
+    [RelayCommand]
+    private void NextSearchResult()
+    {
+        if (_searchResults.Count == 0) return;
+        _searchResultIndex = (_searchResultIndex + 1) % _searchResults.Count;
+        JumpToSearchResult();
+    }
+
+    private void JumpToSearchResult()
+    {
+        if (_searchResultIndex < 0 || _searchResultIndex >= _searchResults.Count) return;
+        var offset = _searchResults[_searchResultIndex];
+        HexEditor.ScrollOffset = (offset / 16) * 16;
+        SearchResultText = $"结果 {_searchResultIndex + 1}/{_searchResults.Count} @ 0x{offset:X}";
+        StatusText = SearchResultText;
     }
 
     [RelayCommand]

@@ -70,12 +70,23 @@
             <Separator/>
             <Label Content="跳转: " VerticalAlignment="Center"/>
             <TextBox Text="{Binding GotoOffsetText, UpdateSourceTrigger=PropertyChanged}"
-                     Width="120" VerticalAlignment="Center">
+                     Width="100" VerticalAlignment="Center">
                 <TextBox.InputBindings>
                     <KeyBinding Key="Enter" Command="{Binding GoToOffsetCommand}"/>
                 </TextBox.InputBindings>
             </TextBox>
             <Button Content="Go" Command="{Binding GoToOffsetCommand}" VerticalAlignment="Center"/>
+            <Separator/>
+            <Label Content="搜索: " VerticalAlignment="Center"/>
+            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                     Width="120" VerticalAlignment="Center">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding SearchBytesCommand}"/>
+                </TextBox.InputBindings>
+            </TextBox>
+            <Button Content="搜" Command="{Binding SearchBytesCommand}" VerticalAlignment="Center"/>
+            <Button Content="▶" Command="{Binding NextSearchResultCommand}" VerticalAlignment="Center" Width="22"/>
+            <TextBlock Text="{Binding SearchResultText}" VerticalAlignment="Center" Margin="4,0" FontSize="11" Foreground="Gray"/>
         </ToolBar>
 
         <!-- 主内容区 - 三栏布局 -->
