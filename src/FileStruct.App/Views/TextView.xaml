@@ -16,12 +16,13 @@
             <Label Content="编码:" VerticalAlignment="Center"/>
             <ComboBox x:Name="EncodingCombo" Width="120"
                       VerticalAlignment="Center" Margin="4,0"
-                      SelectedIndex="0">
-                <ComboBoxItem>UTF-8</ComboBoxItem>
-                <ComboBoxItem>GBK</ComboBoxItem>
-                <ComboBoxItem>UTF-16LE</ComboBoxItem>
-                <ComboBoxItem>UTF-16BE</ComboBoxItem>
-                <ComboBoxItem>ASCII</ComboBoxItem>
+                      SelectedIndex="0"
+                      SelectionChanged="EncodingCombo_SelectionChanged">
+                <ComboBoxItem Tag="utf-8">UTF-8</ComboBoxItem>
+                <ComboBoxItem Tag="gb2312">GBK</ComboBoxItem>
+                <ComboBoxItem Tag="utf-16LE">UTF-16LE</ComboBoxItem>
+                <ComboBoxItem Tag="utf-16BE">UTF-16BE</ComboBoxItem>
+                <ComboBoxItem Tag="ascii">ASCII</ComboBoxItem>
             </ComboBox>
         </StackPanel>
 

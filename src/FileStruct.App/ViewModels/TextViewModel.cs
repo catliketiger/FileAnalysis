@@ -4,11 +4,10 @@ using FileStruct.Core.Models;
 
 namespace FileStruct.App.ViewModels;
 
-/// <summary>
-/// 纯文本视图模型
-/// </summary>
 public partial class TextViewModel : ObservableObject
 {
+    private BinaryBuffer? _buffer;
+
     [ObservableProperty]
     private string _textContent = "";
 
@@ -18,24 +17,38 @@ public partial class TextViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasContent;
 
-    /// <summary>
-    /// 从二进制缓冲区加载文本
-    /// </summary>
     public void LoadText(BinaryBuffer buffer, Encoding encoding)
     {
-        // 文件较大时只读取前 1MB 用于显示
-        var maxRead = (int)Math.Min(buffer.Length, 1024 * 1024);
-        var bytes = buffer.ReadBytes(0, maxRead);
+        _buffer = buffer;
+        ReloadText(encoding);
+    }
+
+    public void ReloadText(Encoding encoding)
+    {
+        if (_buffer == null) return;
+        var maxRead = (int)Math.Min(_buffer.Length, 1024 * 1024);
+        var bytes = _buffer.ReadBytes(0, maxRead);
         TextContent = encoding.GetString(bytes);
         EncodingName = encoding.WebName;
         HasContent = true;
     }
 
-    /// <summary>
-    /// 清除文本内容
-    /// </summary>
+    public void ReloadByEncodingName(string encodingName)
+    {
+        try
+        {
+            var encoding = Encoding.GetEncoding(encodingName);
+            ReloadText(encoding);
+        }
+        catch
+        {
+            // 编码名称无效时不处理
+        }
+    }
+
     public void Clear()
     {
+        _buffer = null;
         TextContent = "";
         HasContent = false;
     }
