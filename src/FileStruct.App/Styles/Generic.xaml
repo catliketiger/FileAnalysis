@@ -65,6 +65,14 @@
                                  BorderThickness="0"
                                  Background="White"
                                  FontSize="13">
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="选区开始" x:Name="CM_SelectStart"/>
+                                    <MenuItem Header="选区结束" x:Name="CM_SelectEnd"/>
+                                    <Separator/>
+                                    <MenuItem Header="添加书签" x:Name="CM_AddBookmark"/>
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
                             <ListBox.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <VirtualizingStackPanel/>

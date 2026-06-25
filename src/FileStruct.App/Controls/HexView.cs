@@ -124,8 +124,17 @@ public class HexView : Control
             listBox.MouseMove += OnListBoxMouseMove;
             listBox.MouseLeftButtonUp += OnListBoxMouseUp;
             listBox.PreviewMouseLeftButtonDown += OnListBoxEmptyClick;
-            listBox.ContextMenuOpening += OnListBoxContextMenuOpening;
+            listBox.ContextMenuOpening += OnContextMenuOpening;
             listBox.ItemContainerGenerator.StatusChanged += (_, _) => UpdateRowHighlights();
+
+            // 绑定右键菜单项
+            if (listBox.ContextMenu != null)
+            {
+                foreach (var item in listBox.ContextMenu.Items.OfType<System.Windows.Controls.MenuItem>())
+                {
+                    item.Click += OnContextMenuItemClick;
+                }
+            }
         }
         // 选择变更时更新高亮
         Selection.SelectionChanged += (_, args) =>
@@ -143,68 +152,6 @@ public class HexView : Control
 
     /// <summary>请求添加书签事件（供 HexEditorView 订阅）</summary>
     public event Action<long>? BookmarkRequested;
-
-    private void OnListBoxContextMenuOpening(object sender, System.Windows.Controls.ContextMenuEventArgs e)
-    {
-        // 获取右键点击位置的字节偏移
-        var pos = System.Windows.Input.Mouse.GetPosition(sender as System.Windows.UIElement);
-        var element = sender as System.Windows.FrameworkElement;
-        var hit = System.Windows.Media.VisualTreeHelper.HitTest(element!, pos);
-        if (hit?.VisualHit == null) return;
-
-        _contextMenuOffset = -1;
-        var dep = hit.VisualHit as System.Windows.DependencyObject;
-        while (dep != null && _contextMenuOffset < 0)
-        {
-            if (dep is System.Windows.FrameworkElement fe && fe.DataContext is ByteCell cell)
-                _contextMenuOffset = cell.Offset;
-            dep = System.Windows.Media.VisualTreeHelper.GetParent(dep);
-        }
-        if (_contextMenuOffset < 0) return;
-
-        // 构建右键菜单
-        var menu = new System.Windows.Controls.ContextMenu();
-        menu.Opened += (_, _) => { if (sender is System.Windows.UIElement ui) ui.Focus(); };
-
-        AddMenuItem(menu, "选区开始", () =>
-        {
-            _selectionAnchor = _contextMenuOffset;
-            Selection.BeginSelection(_contextMenuOffset);
-            UpdateRowHighlights();
-        });
-
-        AddMenuItem(menu, "选区结束", () =>
-        {
-            if (_selectionAnchor >= 0)
-            {
-                Selection.ClearSelection();
-                Selection.BeginSelection(Math.Min(_selectionAnchor, _contextMenuOffset));
-                Selection.ExtendSelection(Math.Max(_selectionAnchor, _contextMenuOffset));
-                _selectionAnchor = -1;
-                UpdateRowHighlights();
-            }
-        });
-
-        menu.Items.Add(new System.Windows.Controls.Separator());
-
-        AddMenuItem(menu, "添加书签", () =>
-        {
-            BookmarkRequested?.Invoke(_contextMenuOffset);
-        });
-
-        // 附加到 ListBoxItem 上
-        if (sender is System.Windows.FrameworkElement feElement)
-        {
-            feElement.ContextMenu = menu;
-        }
-    }
-
-    private static void AddMenuItem(System.Windows.Controls.ContextMenu menu, string header, Action action)
-    {
-        var item = new System.Windows.Controls.MenuItem { Header = header };
-        item.Click += (_, _) => action();
-        menu.Items.Add(item);
-    }
 
     private void OnListBoxEmptyClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
@@ -305,6 +252,55 @@ public class HexView : Control
     private void OnListBoxMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         _isDragging = false;
+    }
+
+    private void OnContextMenuOpening(object sender, System.Windows.Controls.ContextMenuEventArgs e)
+    {
+        // 获取右键点击位置的字节偏移
+        var listBox = sender as System.Windows.Controls.ListBox;
+        if (listBox == null) return;
+        var pos = System.Windows.Input.Mouse.GetPosition(listBox);
+        var hit = System.Windows.Media.VisualTreeHelper.HitTest(listBox, pos);
+        if (hit?.VisualHit == null) return;
+
+        _contextMenuOffset = -1;
+        var dep = hit.VisualHit as System.Windows.DependencyObject;
+        while (dep != null && _contextMenuOffset < 0)
+        {
+            if (dep is System.Windows.FrameworkElement fe && fe.DataContext is ByteCell cell)
+                _contextMenuOffset = cell.Offset;
+            dep = System.Windows.Media.VisualTreeHelper.GetParent(dep);
+        }
+    }
+
+    private void OnContextMenuItemClick(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (_contextMenuOffset < 0) return;
+
+        var header = (sender as System.Windows.Controls.MenuItem)?.Header?.ToString();
+        switch (header)
+        {
+            case "选区开始":
+                _selectionAnchor = _contextMenuOffset;
+                Selection.BeginSelection(_contextMenuOffset);
+                UpdateRowHighlights();
+                break;
+
+            case "选区结束":
+                if (_selectionAnchor >= 0)
+                {
+                    Selection.ClearSelection();
+                    Selection.BeginSelection(Math.Min(_selectionAnchor, _contextMenuOffset));
+                    Selection.ExtendSelection(Math.Max(_selectionAnchor, _contextMenuOffset));
+                    _selectionAnchor = -1;
+                    UpdateRowHighlights();
+                }
+                break;
+
+            case "添加书签":
+                BookmarkRequested?.Invoke(_contextMenuOffset);
+                break;
+        }
     }
 
     private void RebuildRows()
