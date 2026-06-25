@@ -120,6 +120,13 @@ public class HexView : Control
         var listBox = GetTemplateChild("PART_ListBox") as ListBox;
         if (listBox != null)
         {
+            // 移除旧事件避免重复订阅
+            listBox.PreviewMouseLeftButtonDown -= OnListBoxPreviewMouseDown;
+            listBox.MouseMove -= OnListBoxMouseMove;
+            listBox.MouseLeftButtonUp -= OnListBoxMouseUp;
+            listBox.PreviewMouseLeftButtonDown -= OnListBoxEmptyClick;
+            listBox.ContextMenuOpening -= OnContextMenuOpening;
+
             listBox.PreviewMouseLeftButtonDown += OnListBoxPreviewMouseDown;
             listBox.MouseMove += OnListBoxMouseMove;
             listBox.MouseLeftButtonUp += OnListBoxMouseUp;
@@ -127,23 +134,27 @@ public class HexView : Control
             listBox.ContextMenuOpening += OnContextMenuOpening;
             listBox.ItemContainerGenerator.StatusChanged += (_, _) => UpdateRowHighlights();
 
-            // 绑定右键菜单项
+            // 绑定右键菜单项（先移除再添加防重复）
             if (listBox.ContextMenu != null)
             {
                 foreach (var item in listBox.ContextMenu.Items.OfType<System.Windows.Controls.MenuItem>())
                 {
+                    item.Click -= OnContextMenuItemClick;
                     item.Click += OnContextMenuItemClick;
                 }
             }
         }
         // 选择变更时更新高亮
-        Selection.SelectionChanged += (_, args) =>
-        {
-            SelectionStart = Selection.HasSelection ? Math.Min(args.StartOffset, args.EndOffset) : -1;
-            SelectionEnd = Selection.HasSelection ? Math.Max(args.StartOffset, args.EndOffset) : -1;
-            UpdateRowHighlights();
-        };
+        Selection.SelectionChanged -= OnSelectionChanged;
+        Selection.SelectionChanged += OnSelectionChanged;
         RebuildRows();
+    }
+
+    private void OnSelectionChanged(object? sender, Controls.SelectionChangedEventArgs args)
+    {
+        SelectionStart = Selection.HasSelection ? Math.Min(args.StartOffset, args.EndOffset) : -1;
+        SelectionEnd = Selection.HasSelection ? Math.Max(args.StartOffset, args.EndOffset) : -1;
+        UpdateRowHighlights();
     }
 
     private bool _isDragging;
