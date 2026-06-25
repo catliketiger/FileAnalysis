@@ -1,0 +1,32 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:FileStruct.App.Controls">
+
+    <!-- HexView 默认样式 -->
+    <Style TargetType="controls:HexView">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="controls:HexView">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <ScrollViewer x:Name="PART_ScrollViewer"
+                                      VerticalScrollBarVisibility="Visible"
+                                      HorizontalScrollBarVisibility="Auto">
+                            <ItemsControl x:Name="PART_ItemsControl"
+                                          FontFamily="Cascadia Code"
+                                          FontSize="13">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

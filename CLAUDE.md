@@ -4,24 +4,108 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A Windows desktop tool for binary file structure analysis — automatically identifies and visualizes the internal layout of unknown/documented binary files through signature matching and heuristic inference, with a hex view + structure tree as the core交互 model.
+A Windows desktop tool for binary file structure analysis — automatically identifies and visualizes the internal layout of unknown binary files through signature matching and heuristic inference, with a hex view + structure tree as the core interaction model.
 
-**Current status**: Pre-development. Only requirements documents exist. No source code, no tech stack selected.
+**Current status**: V0.1 MVP. C# .NET 10 WPF, with core models, services (file loading, type detection, project save/open), xUnit tests (36 passing), and WPF shell (HexView, TextView, MainWindow with DI).
+
+## Tech Stack
+
+| Component | Choice |
+|-----------|--------|
+| Language / Runtime | C# .NET 10 |
+| UI Framework | WPF (CommunityToolkit.Mvvm) |
+| DI | Microsoft.Extensions.DependencyInjection |
+| Logging | Serilog + Sinks.File + Sinks.Debug |
+| Serialization | System.Text.Json |
+| YAML Import (V1.0) | YamlDotNet |
+| Testing | xUnit + Moq |
+
+## Build & Test Commands
+
+```bash
+# Build all projects
+dotnet build
+
+# Run all tests
+dotnet test
+
+# Run specific test project
+dotnet test tests/FileStruct.Core.Tests
+
+# Run specific test
+dotnet test --filter "BinaryBufferTests.LoadFromFile_ValidFile_ReturnsBuffer"
+```
+
+## Project Structure
+
+```
+FileStruct.sln
+├── src/
+│   ├── FileStruct.Core/          # Pure domain models (no UI deps)
+│   │   ├── Models/               # BinaryBuffer, StructureNode, ProjectFile...
+│   │   ├── Interfaces/           # IFileService, IStructureRecognizer...
+│   │   └── Exceptions/           # FileLoadException, FileTooLargeException...
+│   ├── FileStruct.Infrastructure/ # I/O, logging, config persistence
+│   │   ├── Logging/              # LogService (Serilog wrapper)
+│   │   └── Configuration/        # ConfigFileStore
+│   ├── FileStruct.Services/      # Business logic implementations
+│   │   ├── FileManagement/       # FileService, FileTypeDetector
+│   │   ├── ProjectManagement/    # ProjectService, ProjectSerializer
+│   │   └── Configuration/        # ConfigService
+│   └── FileStruct.App/           # WPF application (entry point)
+│       ├── App.xaml(.cs)         # DI setup in OnStartup
+│       ├── Views/                # MainWindow, HexEditorView, TextView
+│       ├── ViewModels/           # MainViewModel, HexEditorViewModel, TextViewModel
+│       ├── Controls/             # HexView (virtualizing custom control)
+│       ├── Converters/           # BoolToVisibility, FileSize converters
+│       └── Styles/               # Generic.xaml (HexView default template)
+├── tests/
+│   ├── FileStruct.Core.Tests/    # BinaryBuffer tests
+│   ├── FileStruct.Services.Tests/ # Service unit tests
+│   ├── FileStruct.Integration.Tests/ # End-to-end project save/load
+│   └── FileStruct.Performance.Tests/ # Performance benchmarks (V1.0+)
+├── samples/                      # Test binary files
+└── tools/                        # Test data generation scripts
+```
 
 ## Key Documents
 
-- [docs/01-需求规格说明书.md](docs/01-需求规格说明书.md) — Full requirements spec (Chinese). Covers 10 feature modules, non-functional requirements, and version roadmap.
+- [docs/01-需求规格说明书.md](docs/01-需求规格说明书.md) — Full requirements spec (Chinese). 10 feature modules, non-functional requirements, version roadmap.
 - [.spec/开发规范.md](.spec/开发规范.md) — Development workflow rules.
+- [C:\Users\tiger\.claude\plans](C:\Users\tiger\.claude\plans) — Implementation plans.
+
+## Core Architecture
+
+### Layered Architecture
+```
+Presentation (WPF Views) → ViewModels → Services (Business Logic) → Infrastructure (I/O/Logging) → Core (Models/Interfaces)
+```
+
+### Communication Pattern
+- View → ViewModel: Data binding + Commands (CommunityToolkit.Mvvm source generators)
+- ViewModel → Service: Interface injection via DI constructor
+- Cross-cutting events: WeakReferenceMessenger (CommunityToolkit.Mvvm)
+- Key messages: FileLoadedMessage, StructureRecognizedMessage, SelectionChangedMessage
+
+### Key Data Flow: File Load -> Display
+```
+User opens file → MainViewModel.OpenFileCommand
+  → IFileService.LoadFileAsync(path)         // async via MemoryMappedFile
+    → FileTypeDetector.Detect(path)           // magic + extension matching
+    → BinaryBuffer (wraps MMF, zero-copy)
+  → HexEditorViewModel.Buffer = buffer        // triggers hex view render
+  → FileType.IsText? TextView : HexView       // default view selection
+```
 
 ## Development Workflow Rules
 
 From `.spec/开发规范.md`:
 
 1. **TDD-first**: Write unit/integration tests before core logic.
-2. **Plan before code**: For large changes, write a plan doc first, get confirmation, then generate code.
-3. **Git before edit**: Commit before modifying files to ensure rollback capability.
-4. **ASCII Art for UI**: Use ASCII art diagrams for simple UI mockups/demonstrations.
-5. **DEBUG switch**: Provide a DEBUG toggle. Ship in DEBUG mode first — key info logged to files. Switch to Release mode only after tests pass.
+2. **Plan before code**: For large changes, write a plan doc first, get confirmation.
+3. **Git before edit**: Commit before modifying files for rollback.
+4. **ASCII Art for UI**: Use ASCII art diagrams for UI mockups.
+5. **DEBUG switch**: Ship in DEBUG mode first (Serilog file logging), switch to Release after tests pass.
 
 ## Version Roadmap
 
@@ -29,50 +113,12 @@ From `.spec/开发规范.md`:
 |---------|-------|-----------------|
 | V0.1 MVP | Core viewing & project persistence | File loading, hex view, text view, project save/open |
 | V1.0 Core | Auto-recognition + manual annotation loop | Dual-engine recognition, structure tree ↔ hex linkage, manual editing, custom format rules, hex tools, live preview, bookmarks |
-| V1.5 Pro | Advanced analysis | File diff (byte + field level), split views, theming, rule management, structure export (C struct/JSON) |
-| V2.0 AI | Intelligent extension | LLM-powered structure recognition (optional online), batch classification |
-
-## Architectural Concepts (from Requirements)
-
-The requirements imply a modular architecture with these core subsystems:
-
-### Core Modules (per 需求规格说明书 §2)
-
-| Module | Responsibility |
-|--------|---------------|
-| **File Management** | Load binary files (≤200 MB), type detection, error handling |
-| **Multi-View** | Hex view (offset/hex/ASCII), text view (auto-encoding detection), live decode preview, bookmarks, split panes |
-| **Structure Recognition** | Dual-engine: magic-number signature matching + heuristic inference. Async for large files. Confidence scoring. AI extendable. |
-| **Structure Tree + Linkage** | Bidirectional: click tree → highlight hex bytes; select hex bytes → highlight tree node |
-| **Manual Editing** | CRUD on structure fields,框选 create, drag resize, undo/redo, per-field reset |
-| **Custom Format Rules** | Import JSON/YAML rule libraries, conflict detection, user-defined rules override built-in |
-| **File Diff** | Byte-level binary diff + field-level structural diff between two same-type files |
-| **Project Management** | Save/load analysis state (.project files with hash verification) |
-| **Auxiliary Tools** | Base converter (bin/dec/hex) |
-| **System Config** | Theme (dark/light), layout, font, display persistence |
-
-### Key Design Constraints
-
-- **Offline-first**: All core features run locally. AI is an opt-in online feature.
-- **Async for large files**: 200 MB files must never block the UI. Structure recognition runs async with progress feedback.
-- **Performance targets**: 200 MB load ≤ 0.5s, 10 MB recognition ≤ 2s, view switch ≤ 0.3s.
-- **Language**: First release is simplified Chinese only (i18n framework TBD).
-- **OS**: Windows 10/11 64-bit, HiDPI support for 1080p/2K/4K.
-
-## Tech Stack Decisions Needed
-
-This project has NOT selected a tech stack yet. Common options for a Windows desktop binary analysis tool:
-
-- **Rust + egui/iced** — Strong performance for binary processing, cross-platform potential, good async support
-- **C++/WinRT + WinUI 3** — Native Windows, best platform integration, steep learning curve
-- **C# WPF/WinUI** — Rapid development, .NET ecosystem, good for hex editor UIs
-- **Electron + Rust (Tauri style)** — Web-based UI, binary processing in native Rust layer
-
-When choosing, prioritize: memory-safe binary handling, async I/O for large files, native Windows look-and-feel, and easy debugging (DEBUG switch per development spec).
+| V1.5 Pro | Advanced analysis | File diff, split views, theming, rule management, structure export |
+| V2.0 AI | Intelligent extension | LLM-powered structure recognition, batch classification |
 
 ## Development Conventions
 
-- Commit messages should reference the relevant requirements section (e.g., `§2.3` for structure recognition)
+- Commit messages reference requirements sections (e.g., `§2.3` for structure recognition)
 - Follow the version roadmap strictly — don't implement V1.5+ features in V0.1 scope
-- When starting a new version milestone, begin with test cases per Development Rule #1
-- Plan doc should cite specific sections from the requirements spec
+- Start each version milestone with test cases per Development Rule #1
+- When starting new code generation, ensure `dotnet build` passes with 0 errors first

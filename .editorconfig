@@ -1,0 +1,28 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+end_of_line = crlf
+
+[*.cs]
+indent_size = 4
+csharp_new_line_before_open_brace = all
+csharp_style_var_for_built_in_types = true:silent
+csharp_style_var_when_type_is_apparent = true:silent
+csharp_style_expression_bodied_methods = false:suggestion
+csharp_style_expression_bodied_properties = true:silent
+
+[*.xaml]
+indent_size = 2
+indent_style = space
+
+[*.{json,yml,yaml}]
+indent_size = 2
+indent_style = space
+
+[*.md]
+trim_trailing_whitespace = false

@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FileStruct.App/FileStruct.App.csproj" />
+    <Project Path="src/FileStruct.Core/FileStruct.Core.csproj" />
+    <Project Path="src/FileStruct.Infrastructure/FileStruct.Infrastructure.csproj" />
+    <Project Path="src/FileStruct.Services/FileStruct.Services.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FileStruct.Core.Tests/FileStruct.Core.Tests.csproj" />
+    <Project Path="tests/FileStruct.Integration.Tests/FileStruct.Integration.Tests.csproj" />
+    <Project Path="tests/FileStruct.Performance.Tests/FileStruct.Performance.Tests.csproj" />
+    <Project Path="tests/FileStruct.Services.Tests/FileStruct.Services.Tests.csproj" />
+  </Folder>
+</Solution>
