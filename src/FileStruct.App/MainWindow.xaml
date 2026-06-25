@@ -40,7 +40,7 @@
                 <MenuItem Header="文本视图" IsCheckable="True"/>
             </MenuItem>
             <MenuItem Header="帮助(_H)">
-                <MenuItem Header="关于(_A)"/>
+                <MenuItem Header="关于(_A)" Command="{Binding ShowAboutCommand}"/>
             </MenuItem>
         </Menu>
 
@@ -81,7 +81,8 @@
 
             <!-- 中间面板：Hex/Text 选项卡 -->
             <Grid Grid.Column="2">
-                <TabControl x:Name="MainTabControl" Margin="0">
+                <TabControl x:Name="MainTabControl" Margin="0"
+                            SelectedIndex="{Binding SelectedTabIndex}">
                     <TabItem Header="十六进制视图">
                         <views:HexEditorView x:Name="HexView"/>
                     </TabItem>

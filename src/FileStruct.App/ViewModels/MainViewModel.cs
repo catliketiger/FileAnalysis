@@ -45,6 +45,9 @@ public partial class MainViewModel : ObservableObject
     private string _activeView = "Hex";
 
     [ObservableProperty]
+    private int _selectedTabIndex;
+
+    [ObservableProperty]
     private HexEditorViewModel _hexEditor = new();
 
     [ObservableProperty]
@@ -93,6 +96,7 @@ public partial class MainViewModel : ObservableObject
 
             // 判断默认视图
             ActiveView = fileType.IsText ? "Text" : "Hex";
+            SelectedTabIndex = fileType.IsText ? 1 : 0;
 
             if (fileType.IsText)
             {
@@ -217,6 +221,25 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void ShowAbout()
+    {
+        var message = $"FileStruct - 二进制文件结构化分析工具\n" +
+                      $"版本: {typeof(MainViewModel).Assembly.GetName().Version}\n" +
+                      $"技术栈: .NET 10 + WPF + CommunityToolkit.Mvvm\n\n" +
+                      $"功能:\n" +
+                      $"• 十六进制/文本双视图\n" +
+                      $"• 双引擎结构识别 (魔数匹配 + 启发式推断)\n" +
+                      $"• 结构树 + 视图联动\n" +
+                      $"• 手动编辑 + 撤销/重做\n" +
+                      $"• 自定义格式规则 (JSON/YAML)\n" +
+                      $"• 实时解码预览\n" +
+                      $"• 项目保存/打开 (SHA256 校验)";
+
+        System.Windows.MessageBox.Show(message, "关于 FileStruct",
+            System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+    }
+
+    [RelayCommand]
     private void CloseFile()
     {
         if (_buffer == null) return;
@@ -233,6 +256,7 @@ public partial class MainViewModel : ObservableObject
         LivePreview.Clear();
 
         IsFileLoaded = false;
+        SelectedTabIndex = 0;
         WindowTitle = "FileStruct - 二进制文件结构化分析工具";
         FileInfoText = "";
         StatusText = "文件已关闭";
