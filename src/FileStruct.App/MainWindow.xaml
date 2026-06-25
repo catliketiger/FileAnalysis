@@ -12,6 +12,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -30,8 +31,9 @@
                 <MenuItem Header="退出(_X)"/>
             </MenuItem>
             <MenuItem Header="视图(_V)">
-                <MenuItem Header="十六进制视图" IsCheckable="True"
-                          IsChecked="{Binding ActiveView, Converter={x:Null}}"/>
+                <MenuItem Header="结构识别(_R)" Command="{Binding RecognizeCommand}"/>
+                <Separator/>
+                <MenuItem Header="十六进制视图" IsCheckable="True"/>
                 <MenuItem Header="文本视图" IsCheckable="True"/>
             </MenuItem>
             <MenuItem Header="帮助(_H)">
@@ -40,27 +42,54 @@
         </Menu>
 
         <!-- 工具栏 -->
-        <ToolBar Grid.Row="0" Band="1">
+        <ToolBar Grid.Row="1" Band="1">
             <Button Content="📂 打开" Command="{Binding OpenFileCommand}"/>
-            <Button Content="💾 保存" Command="{Binding SaveProjectCommand}"/>
+            <Button Content="🔍 识别" Command="{Binding RecognizeCommand}"/>
             <Separator/>
-            <Button Content="🔄 进制转换"/>
+            <Button Content="💾 保存" Command="{Binding SaveProjectCommand}"/>
         </ToolBar>
 
-        <!-- 主内容区 -->
-        <TabControl Grid.Row="1" x:Name="MainTabControl"
-                    SelectedIndex="{Binding ActiveView, Converter={x:Null}}"
-                    Margin="4">
-            <TabItem Header="十六进制视图">
-                <views:HexEditorView x:Name="HexView"/>
-            </TabItem>
-            <TabItem Header="文本视图">
-                <views:TextView x:Name="TextView"/>
-            </TabItem>
-        </TabControl>
+        <!-- 主内容区 - 三栏布局 -->
+        <Grid Grid.Row="2" Margin="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" MinWidth="200"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧面板：结构树 -->
+            <Border Grid.Column="0" BorderBrush="#DDD" BorderThickness="1" Margin="0,0,4,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Background="#F5F5F5" Padding="8,4">
+                        <TextBlock Text="结构树" FontWeight="Bold"/>
+                    </Border>
+                    <views:StructureTreeView Grid.Row="1" x:Name="StructTreeView"/>
+                </Grid>
+            </Border>
+
+            <!-- 分割线 -->
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center"
+                          ShowsPreview="False" Background="Transparent"/>
+
+            <!-- 中间面板：Hex/Text 选项卡 -->
+            <Grid Grid.Column="2">
+                <TabControl x:Name="MainTabControl" Margin="0">
+                    <TabItem Header="十六进制视图">
+                        <views:HexEditorView x:Name="HexView"/>
+                    </TabItem>
+                    <TabItem Header="文本视图">
+                        <views:TextView x:Name="TextView"/>
+                    </TabItem>
+                </TabControl>
+            </Grid>
+        </Grid>
 
         <!-- 状态栏 -->
-        <StatusBar Grid.Row="2">
+        <StatusBar Grid.Row="3">
             <StatusBarItem>
                 <TextBlock Text="{Binding StatusText}"/>
             </StatusBarItem>

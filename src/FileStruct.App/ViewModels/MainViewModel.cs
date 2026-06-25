@@ -15,13 +15,16 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly IFileService _fileService;
     private readonly IProjectService _projectService;
+    private readonly IStructureRecognizer _recognizer;
     private readonly ILogService _logger;
     private BinaryBuffer? _buffer;
 
-    public MainViewModel(IFileService fileService, IProjectService projectService, ILogService logger)
+    public MainViewModel(IFileService fileService, IProjectService projectService,
+        IStructureRecognizer recognizer, ILogService logger)
     {
         _fileService = fileService;
         _projectService = projectService;
+        _recognizer = recognizer;
         _logger = logger;
         _logger.Debug("MainViewModel 初始化");
     }
@@ -46,6 +49,12 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private TextViewModel _textView = new();
+
+    [ObservableProperty]
+    private StructureTreeViewModel _structureTree = new();
+
+    [ObservableProperty]
+    private bool _isRecognizing;
 
     [RelayCommand]
     private async Task OpenFileAsync()
@@ -189,6 +198,42 @@ public partial class MainViewModel : ObservableObject
             StatusText = $"打开项目失败: {ex.Message}";
             _logger.Error($"打开项目失败", ex);
         }
+    }
+
+    [RelayCommand]
+    private async Task RecognizeAsync()
+    {
+        if (_buffer == null) return;
+
+        try
+        {
+            IsRecognizing = true;
+            StatusText = "正在进行结构识别...";
+
+            var result = await _recognizer.RecognizeAsync(_buffer,
+                new Progress<RecognitionProgress>(p =>
+                {
+                    StatusText = p.StatusText;
+                }));
+
+            StructureTree.LoadTree(result);
+            StatusText = $"结构识别完成，共发现 {CountNodes(result)} 个字段";
+            _logger.Info($"结构识别完成: {CountNodes(result)} 个节点");
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"识别失败: {ex.Message}";
+            _logger.Error("结构识别失败", ex);
+        }
+        finally
+        {
+            IsRecognizing = false;
+        }
+    }
+
+    private static int CountNodes(StructureNode node)
+    {
+        return 1 + node.Children.Sum(CountNodes);
     }
 
     private static string FormatFileSize(long bytes)

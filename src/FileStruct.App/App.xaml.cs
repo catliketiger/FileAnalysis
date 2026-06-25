@@ -5,6 +5,7 @@ using FileStruct.Infrastructure.Logging;
 using FileStruct.Services.Configuration;
 using FileStruct.Services.FileManagement;
 using FileStruct.Services.ProjectManagement;
+using FileStruct.Services.StructureRecognition;
 using FileStruct.App.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -38,6 +39,12 @@ public partial class App : Application
         services.AddSingleton<ProjectSerializer>();
         services.AddSingleton<IProjectService, ProjectService>();
         services.AddSingleton<IConfigService, ConfigService>();
+
+        // V1.0 识别引擎
+        services.AddSingleton<ISignatureMatcher, SignatureMatcher>();
+        services.AddSingleton<IHeuristicEngine, HeuristicEngine>();
+        services.AddSingleton<IConfidenceScorer, ConfidenceScorer>();
+        services.AddSingleton<IStructureRecognizer, StructureRecognizer>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();
