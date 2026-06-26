@@ -410,11 +410,19 @@ public partial class MainViewModel : ObservableObject
     private List<long> _searchResults = [];
     private int _searchResultIndex = -1;
     private int _searchPatternLength;
+    private string _lastSearchedText = "";
 
     [RelayCommand]
     private async Task SearchBytesAsync()
     {
         if (_buffer == null || string.IsNullOrWhiteSpace(SearchText)) return;
+
+        // 搜索词未变且已有结果：等效于搜索下一个
+        if (SearchText == _lastSearchedText && _searchResults.Count > 0)
+        {
+            NextSearchResult();
+            return;
+        }
 
         // 解析搜索模式
         byte[] pattern;
@@ -474,6 +482,7 @@ public partial class MainViewModel : ObservableObject
             }, ct);
 
             _searchResults = results;
+            _lastSearchedText = SearchText;
 
             if (_searchResults.Count == 0)
             {
