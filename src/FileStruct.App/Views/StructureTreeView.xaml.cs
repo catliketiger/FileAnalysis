@@ -1,4 +1,5 @@
 using System.IO;
+using System.IO.Compression;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -29,6 +30,8 @@ public partial class StructureTreeView : UserControl
         _treeContextMenu.Items.Add(new MenuItem { Header = "添加子字段" });
         _treeContextMenu.Items.Add(new MenuItem { Header = "删除字段" });
         _treeContextMenu.Items.Add(new MenuItem { Header = "编辑字段…" });
+        _treeContextMenu.Items.Add(new Separator());
+        _treeContextMenu.Items.Add(new MenuItem { Header = "展开压缩包" });
         _treeContextMenu.Items.Add(new Separator());
         _treeContextMenu.Items.Add(new MenuItem { Header = "导出结构…" });
         _treeContextMenu.Items.Add(new MenuItem { Header = "导入结构…" });
@@ -113,6 +116,9 @@ public partial class StructureTreeView : UserControl
                 break;
             case "编辑字段…":
                 EditField(item, mainVm);
+                break;
+            case "展开压缩包":
+                ExpandZip(item, mainVm);
                 break;
             case "导出结构…":
                 ExportStructure(item, mainVm);
@@ -259,6 +265,80 @@ public partial class StructureTreeView : UserControl
         {
             mainVm.StatusText = $"导出失败: {ex.Message}";
         }
+    }
+
+    private void ExpandZip(TreeItemViewModel item, MainViewModel mainVm)
+    {
+        var buffer = mainVm.HexEditor.Buffer;
+        if (buffer == null) { mainVm.StatusText = "没有已打开的文件"; return; }
+
+        try
+        {
+            int entries = 0;
+            long offset = 0;
+            var parent = item.Node;
+
+            // 遍历 ZIP 本地文件头
+            while (offset + 30 <= buffer.Length)
+            {
+                var sig = buffer.ReadUInt32(offset, true);
+                if (sig != 0x04034B50) break; // 不是 PK 头，退出
+
+                var compMethod = buffer.ReadUInt16(offset + 8, true);
+                var compSize = buffer.ReadUInt32(offset + 18, true);
+                var uncompSize = buffer.ReadUInt32(offset + 22, true);
+                var nameLen = buffer.ReadUInt16(offset + 26, true);
+                var extraLen = buffer.ReadUInt16(offset + 28, true);
+
+                // 读文件名
+                string fileName;
+                if (nameLen > 0)
+                {
+                    var nameBytes = buffer.ReadBytes(offset + 30, nameLen);
+                    fileName = System.Text.Encoding.UTF8.GetString(nameBytes);
+                }
+                else
+                {
+                    fileName = $"(entry_{entries})";
+                }
+
+                // 数据体偏移
+                var dataOffset = offset + 30 + nameLen + extraLen;
+                var methodStr = compMethod switch { 0 => "Stored", 1 => "Shrunk", 8 => "Deflate", 12 => "BZIP2", _ => $"M{compMethod}" };
+                var displayName = $"{fileName}  [{methodStr}]  {FormatSize(compSize)}→{FormatSize(uncompSize)}";
+
+                parent.AddChild(new StructureNode
+                {
+                    Name = displayName,
+                    Offset = dataOffset,
+                    Length = compSize > 0 ? (long)compSize : (long)uncompSize,
+                    DataType = FieldDataType.Bytes,
+                    Confidence = 1.0,
+                    Source = StructureNodeSource.AutoDetected,
+                    Description = $"{methodStr}: {compSize} → {uncompSize} bytes",
+                });
+
+                entries++;
+                if (entries > 10000) break; // 安全限制
+
+                // 下一个条目
+                offset = dataOffset + compSize;
+            }
+
+            mainVm.StructureTree.RefreshTree();
+            mainVm.StatusText = $"压缩包展开完成，共 {entries} 个条目";
+        }
+        catch (Exception ex)
+        {
+            mainVm.StatusText = $"展开失败: {ex.Message}";
+        }
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes}B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1}KB";
+        return $"{bytes / (1024.0 * 1024.0):F1}MB";
     }
 
     private void ImportStructure(TreeItemViewModel item, MainViewModel mainVm)
