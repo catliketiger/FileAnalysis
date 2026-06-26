@@ -17,6 +17,11 @@ public partial class StructureTreeViewModel : ObservableObject
 
     public ObservableCollection<TreeItemViewModel> RootItems { get; } = new();
 
+    // 搜索状态：上次搜索文本和当前匹配索引
+    private string _lastSearchText = "";
+    private int _lastMatchIndex = -1;
+    private List<TreeItemViewModel> _lastMatches = new();
+
     /// <summary>
     /// 加载新的结构树
     /// </summary>
@@ -28,43 +33,72 @@ public partial class StructureTreeViewModel : ObservableObject
         {
             RootItems.Add(CreateItem(child));
         }
+        ResetSearchState();
     }
 
     /// <summary>
-    /// 搜索树节点（按名称匹配，不区分大小写），选中并展开找到的项
+    /// 搜索树节点（按名称匹配，不区分大小写），支持回车循环到下一个匹配
     /// </summary>
     public bool SearchTree(string searchText)
     {
         if (RootNode == null || string.IsNullOrWhiteSpace(searchText)) return false;
 
-        // 在 TreeItemViewModel 树中搜索（确保能选中 UI 中的对应项）
-        var found = FindTreeItemByName(RootItems, searchText);
-        if (found != null)
+        // 如果搜索词变了，重新收集所有匹配
+        if (!string.Equals(_lastSearchText, searchText, StringComparison.Ordinal))
         {
-            ClearAllSelection(RootItems);
-            ExpandPathToTreeItem(found);
-            found.IsSelected = true;
-            SelectedNode = found.Node;
-            return true;
+            _lastSearchText = searchText;
+            _lastMatches = CollectAllMatches(RootItems, searchText);
+            _lastMatchIndex = -1;
         }
-        return false;
+
+        if (_lastMatches.Count == 0) return false;
+
+        // 移动到下一个匹配
+        _lastMatchIndex = (_lastMatchIndex + 1) % _lastMatches.Count;
+        var found = _lastMatches[_lastMatchIndex];
+
+        ClearAllSelection(RootItems);
+        ExpandPathToTreeItem(found);
+        found.IsSelected = true;
+        SelectedNode = found.Node;
+        return true;
     }
 
     /// <summary>
-    /// 遍历 TreeItemViewModel 树按名称匹配
+    /// 收集所有名称匹配的项
     /// </summary>
-    private static TreeItemViewModel? FindTreeItemByName(IEnumerable<TreeItemViewModel> items, string searchText)
+    private static List<TreeItemViewModel> CollectAllMatches(IEnumerable<TreeItemViewModel> items, string searchText)
+    {
+        var results = new List<TreeItemViewModel>();
+        CollectAllMatchesRecursive(items, searchText, results);
+        return results;
+    }
+
+    private static void CollectAllMatchesRecursive(IEnumerable<TreeItemViewModel> items, string searchText, List<TreeItemViewModel> results)
     {
         foreach (var item in items)
         {
             if (item.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-                return item;
-
-            var found = FindTreeItemByName(item.Children, searchText);
-            if (found != null) return found;
+                results.Add(item);
+            CollectAllMatchesRecursive(item.Children, searchText, results);
         }
-        return null;
     }
+
+    /// <summary>
+    /// 重置搜索状态（文件切换或重新识别时调用）
+    /// </summary>
+    public void ResetSearchState()
+    {
+        _lastSearchText = "";
+        _lastMatchIndex = -1;
+        _lastMatches.Clear();
+    }
+
+    /// <summary>当前匹配序号（从0开始）</summary>
+    public int GetLastMatchIndex() => _lastMatchIndex;
+
+    /// <summary>总匹配数</summary>
+    public int GetTotalMatches() => _lastMatches.Count;
 
     /// <summary>
     /// 清除树
@@ -74,6 +108,7 @@ public partial class StructureTreeViewModel : ObservableObject
         RootNode = null;
         SelectedNode = null;
         RootItems.Clear();
+        ResetSearchState();
     }
 
     /// <summary>

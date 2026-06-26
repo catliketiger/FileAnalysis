@@ -51,9 +51,26 @@ public partial class StructureTreeView : UserControl
             var found = mainVm.StructureTree.SearchTree(text);
             if (found)
             {
-                mainVm.StatusText = $"已定位到字段: {text}";
-                // SearchTree 设置了 found.IsSelected = true，TreeView 绑定自动触发
-                // OnSelectedItemChanged 处理 Hex 导航和状态更新
+                var matchIndex = mainVm.StructureTree.GetLastMatchIndex();
+                var totalMatches = mainVm.StructureTree.GetTotalMatches();
+                var matchText = totalMatches > 1
+                    ? $"匹配 {matchIndex + 1}/{totalMatches}"
+                    : "";
+                mainVm.StatusText = $"已定位到字段: {text}  {matchText}".Trim();
+
+                // 异步 BringIntoView：等待 TreeView 容器生成后再滚动
+                Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded,
+                    new Action(() =>
+                    {
+                        if (StructTree.SelectedItem is TreeItemViewModel selItem)
+                        {
+                            if (StructTree.ItemContainerGenerator
+                                .ContainerFromItem(selItem) is TreeViewItem tvi)
+                            {
+                                tvi.BringIntoView();
+                            }
+                        }
+                    }));
             }
             else
             {
