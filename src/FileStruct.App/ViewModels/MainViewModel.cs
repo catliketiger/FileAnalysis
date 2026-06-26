@@ -222,8 +222,16 @@ public partial class MainViewModel : ObservableObject
                 // 恢复结构树
                 if (project.StructureRoot != null)
                 {
-                    project.StructureRoot.RebuildParentReferences();
-                    StructureTree.LoadTree(project.StructureRoot);
+                    try
+                    {
+                        project.StructureRoot.RebuildParentReferences();
+                        StructureTree.LoadTree(project.StructureRoot);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error("恢复结构树失败", ex);
+                        StatusText = "结构树恢复失败，请重新识别";
+                    }
                 }
 
                 IsFileLoaded = true;
