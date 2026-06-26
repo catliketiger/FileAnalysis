@@ -86,14 +86,14 @@ public class ProjectSerializerTests
     [Fact]
     public void Deserialize_InvalidJson_ThrowsException()
     {
-        Assert.Throws<System.Text.Json.JsonException>(() =>
+        Assert.Throws<System.IO.InvalidDataException>(() =>
             _serializer.Deserialize("{invalid json}"));
     }
 
     [Fact]
     public void Deserialize_NullJson_ThrowsException()
     {
-        Assert.Throws<ArgumentNullException>(() =>
+        Assert.Throws<System.ArgumentNullException>(() =>
             _serializer.Deserialize(null!));
     }
 
