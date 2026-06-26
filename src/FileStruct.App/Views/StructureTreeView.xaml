@@ -16,6 +16,8 @@
         <TextBox Grid.Row="0" x:Name="SearchBox"
                  Margin="4" Padding="4"
                  Text="" KeyDown="SearchBox_KeyDown"
+                 ToolTipService.ShowDuration="10000"
+                 ToolTipService.InitialShowDelay="100"
                  ToolTip="输入字段名称按 Enter 搜索定位"/>
 
         <!-- 结构树 -->
