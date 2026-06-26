@@ -125,10 +125,14 @@ public partial class StructureTreeView : UserControl
 
     private void AddChildField(TreeItemViewModel item, MainViewModel mainVm)
     {
-        var vm = FieldEditViewModel.ForNew(item.Node);
-        var dialog = new FieldEditDialog(vm);
-        while (dialog.ShowDialog() == true)
+        bool retry;
+        do
         {
+            retry = false;
+            var vm = FieldEditViewModel.ForNew(item.Node);
+            var dialog = new FieldEditDialog(vm);
+            if (dialog.ShowDialog() != true) return;
+
             var newOff = vm.ParsedOffset;
             var newEnd = newOff + vm.FieldLength;
             var parentEnd = item.Node.Offset + item.Node.Length;
@@ -136,6 +140,7 @@ public partial class StructureTreeView : UserControl
             {
                 MessageBox.Show($"子字段范围 (0x{newOff:X} - 0x{newEnd:X}) 超出父节点范围 (0x{item.Node.Offset:X} - 0x{parentEnd:X})",
                     "范围错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+                retry = true;
                 continue;
             }
             var node = new StructureNode
@@ -148,10 +153,14 @@ public partial class StructureTreeView : UserControl
                 Confidence = 1.0,
                 Source = StructureNodeSource.UserCreated,
             };
-            mainVm.StructureTree.AddChildNode(item.Node, node);
+            if (!mainVm.StructureTree.AddChildNode(item.Node, node))
+            {
+                MessageBox.Show("嵌套深度不能超过 15 层", "限制", MessageBoxButton.OK, MessageBoxImage.Warning);
+                retry = true;
+                continue;
+            }
             mainVm.StatusText = $"已添加字段: {node.Name} @ 0x{node.Offset:X}";
-            break;
-        }
+        } while (retry);
     }
 
     private void DeleteField(TreeItemViewModel item, MainViewModel mainVm)
@@ -168,10 +177,14 @@ public partial class StructureTreeView : UserControl
 
     private void EditField(TreeItemViewModel item, MainViewModel mainVm)
     {
-        var vm = FieldEditViewModel.ForEdit(item.Node);
-        var dialog = new FieldEditDialog(vm);
-        while (dialog.ShowDialog() == true)
+        bool retry;
+        do
         {
+            retry = false;
+            var vm = FieldEditViewModel.ForEdit(item.Node);
+            var dialog = new FieldEditDialog(vm);
+            if (dialog.ShowDialog() != true) return;
+
             var newOff = vm.ParsedOffset;
             var newLen = vm.FieldLength;
             var newEnd = newOff + newLen;
@@ -184,6 +197,7 @@ public partial class StructureTreeView : UserControl
                 {
                     MessageBox.Show($"字段范围 (0x{newOff:X} - 0x{newEnd:X}) 超出父节点范围 (0x{item.Node.Parent.Offset:X} - 0x{parentEnd:X})",
                         "范围错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    retry = true;
                     continue;
                 }
             }
@@ -206,8 +220,7 @@ public partial class StructureTreeView : UserControl
             }
             item.Node.Endianness = vm.Endianness;
             mainVm.StatusText = $"已更新字段: {item.Node.Name}";
-            break;
-        }
+        } while (retry);
     }
 
     private void ExportStructure(TreeItemViewModel item, MainViewModel mainVm)
@@ -262,6 +275,11 @@ public partial class StructureTreeView : UserControl
         {
             var json = File.ReadAllText(openDialog.FileName);
             var imported = StructureTreeViewModel.ImportFromJson(json);
+            if (StructureTreeViewModel.GetDepth(item.Node) + imported.Children.Count > 15)
+            {
+                MessageBox.Show("导入的结构嵌套深度不能超过 15 层", "限制", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
             foreach (var child in imported.Children)
             {
                 item.Node.AddChild(child);

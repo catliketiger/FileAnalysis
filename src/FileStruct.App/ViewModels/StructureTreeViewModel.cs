@@ -132,8 +132,11 @@ public partial class StructureTreeViewModel : ObservableObject
     /// <summary>
     /// 添加子节点（增量更新，不重置搜索状态）
     /// </summary>
-    public void AddChildNode(StructureNode parent, StructureNode child)
+    /// <returns>添加成功返回 true，超出嵌套深度限制返回 false</returns>
+    public bool AddChildNode(StructureNode parent, StructureNode child)
     {
+        if (GetDepth(parent) >= 15) return false;
+
         parent.AddChild(child);
         var childEnd = child.Offset + child.Length;
         if (parent.Length < childEnd)
@@ -145,6 +148,20 @@ public partial class StructureTreeViewModel : ObservableObject
         {
             parentItem.Children.Add(CreateItem(child));
         }
+        return true;
+    }
+
+    /// <summary>计算节点深度（根=0，子=1，以此类推）</summary>
+    public static int GetDepth(StructureNode node)
+    {
+        int depth = 0;
+        var current = node;
+        while (current.Parent != null)
+        {
+            depth++;
+            current = current.Parent;
+        }
+        return depth;
     }
 
     /// <summary>
