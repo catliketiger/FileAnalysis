@@ -41,8 +41,8 @@ public class DebugConfig
 /// </summary>
 public class FileDefaultsConfig
 {
-    /// <summary>最大文件大小（字节），默认 200MB</summary>
-    public long MaxFileSize { get; set; } = 200 * 1024 * 1024;
+    /// <summary>最大文件大小（字节），默认 10GB</summary>
+    public long MaxFileSize { get; set; } = 10L * 1024 * 1024 * 1024;
 
     /// <summary>默认文本编码</summary>
     public string DefaultEncoding { get; set; } = "UTF-8";

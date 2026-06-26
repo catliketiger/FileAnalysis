@@ -11,9 +11,9 @@ namespace FileStruct.Core.Models;
 public sealed class BinaryBuffer : IDisposable
 {
     /// <summary>
-    /// 默认最大文件大小：200 MB
+    /// 默认最大文件大小：10 GB
     /// </summary>
-    public const long DefaultMaxFileSize = 200 * 1024 * 1024;
+    public const long DefaultMaxFileSize = 10L * 1024 * 1024 * 1024;
 
     private readonly MemoryMappedFile _mappedFile;
     private readonly MemoryMappedViewAccessor _viewAccessor;

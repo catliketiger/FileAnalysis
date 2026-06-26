@@ -17,11 +17,11 @@ public class ExceptionTests
     [Fact]
     public void FileTooLargeException_HasFileSizeInfo()
     {
-        var ex = new FileTooLargeException(300 * 1024 * 1024);
+        var ex = new FileTooLargeException(300L * 1024 * 1024 * 1024);
         Assert.Contains("超过上限", ex.Message);
-        Assert.Contains("200MB", ex.UserAction ?? "");
-        Assert.Equal(300L * 1024 * 1024, ex.FileSize);
-        Assert.Equal(200L * 1024 * 1024, ex.MaxSize);
+        Assert.Contains("10GB", ex.UserAction ?? "");
+        Assert.Equal(300L * 1024 * 1024 * 1024, ex.FileSize);
+        Assert.Equal(10L * 1024 * 1024 * 1024, ex.MaxSize);
         Assert.True(ex.ContextInfo.ContainsKey("FileSize"));
     }
 

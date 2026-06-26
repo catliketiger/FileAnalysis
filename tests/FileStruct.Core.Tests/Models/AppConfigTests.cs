@@ -15,7 +15,7 @@ public class AppConfigTests
         Assert.Equal("Debug", config.Debug.LogLevel);
 
         // FileDefaults defaults
-        Assert.Equal(200L * 1024 * 1024, config.FileDefaults.MaxFileSize);
+        Assert.Equal(10L * 1024 * 1024 * 1024, config.FileDefaults.MaxFileSize);
         Assert.Equal("UTF-8", config.FileDefaults.DefaultEncoding);
         Assert.Equal(2, config.FileDefaults.DefaultByteGroupSize);
         Assert.Equal("LittleEndian", config.FileDefaults.DefaultEndianness);
