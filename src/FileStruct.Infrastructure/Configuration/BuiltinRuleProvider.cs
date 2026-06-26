@@ -655,6 +655,11 @@ public static class BuiltinRuleProvider
                 ("MajorVersion", "uint8", 5, 1, null),
                 ("DotSeparator", "uint8", 6, 1, null),
                 ("MinorVersion", "uint8", 7, 1, null),
+                ("Newline", "uint8", 8, 1, null),
+                ("BinaryComment", "bytes", 9, 8, null),
+            ], false),
+            ("FileBody", [
+                ("Content", "bytes", 20, 0x100000, null),
             ], false),
         ]);
 
