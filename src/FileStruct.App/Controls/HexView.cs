@@ -164,6 +164,9 @@ public class HexView : Control
     /// <summary>请求添加书签事件（供 HexEditorView 订阅）</summary>
     public event Action<long>? BookmarkRequested;
 
+    /// <summary>请求从选中范围创建字段（供 HexEditorView 订阅）</summary>
+    public event Action<long, long>? CreateFieldRequested;
+
     private void OnListBoxEmptyClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         // 点击空白处取消选择
@@ -305,6 +308,15 @@ public class HexView : Control
                     Selection.ExtendSelection(Math.Max(_selectionAnchor, _contextMenuOffset));
                     _selectionAnchor = -1;
                     UpdateRowHighlights();
+                }
+                break;
+
+            case "创建字段":
+                if (Selection.HasSelection && Buffer != null)
+                {
+                    var start = Math.Min(Selection.StartOffset, Selection.EndOffset);
+                    var end = Math.Max(Selection.StartOffset, Selection.EndOffset);
+                    CreateFieldRequested?.Invoke(start, end - start + 1);
                 }
                 break;
 

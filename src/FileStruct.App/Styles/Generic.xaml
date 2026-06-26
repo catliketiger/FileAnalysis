@@ -69,6 +69,7 @@
                                 <ContextMenu>
                                     <MenuItem Header="选区开始" x:Name="CM_SelectStart"/>
                                     <MenuItem Header="选区结束" x:Name="CM_SelectEnd"/>
+                                    <MenuItem Header="创建字段" x:Name="CM_CreateField"/>
                                     <Separator/>
                                     <MenuItem Header="添加书签" x:Name="CM_AddBookmark"/>
                                 </ContextMenu>

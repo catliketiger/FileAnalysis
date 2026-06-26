@@ -56,6 +56,9 @@
                 <MenuItem Header="十六进制视图" IsCheckable="True"/>
                 <MenuItem Header="文本视图" IsCheckable="True"/>
             </MenuItem>
+            <MenuItem Header="工具(_T)">
+                <MenuItem Header="设置(_S)" Command="{Binding ShowSettingsCommand}"/>
+            </MenuItem>
             <MenuItem Header="帮助(_H)">
                 <MenuItem Header="关于(_A)" Command="{Binding ShowAboutCommand}"/>
             </MenuItem>
@@ -154,6 +157,11 @@
                 <TextBlock Text="{Binding StatusText}"/>
             </StatusBarItem>
             <Separator/>
+            <StatusBarItem Width="100">
+                <ProgressBar Value="{Binding RecognitionProgress, Mode=OneWay}"
+                             Maximum="100" Height="14" Width="100"
+                             Visibility="{Binding IsRecognizing, Converter={StaticResource BoolToVisibility}}"/>
+            </StatusBarItem>
             <StatusBarItem>
                 <TextBlock Text="{Binding FileInfoText}"/>
             </StatusBarItem>

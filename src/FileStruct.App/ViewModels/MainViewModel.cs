@@ -16,15 +16,20 @@ public partial class MainViewModel : ObservableObject
     private readonly IFileService _fileService;
     private readonly IProjectService _projectService;
     private readonly IStructureRecognizer _recognizer;
+    private readonly IEditService _editService;
+    private readonly IConfigService _config;
     private readonly ILogService _logger;
     private BinaryBuffer? _buffer;
 
     public MainViewModel(IFileService fileService, IProjectService projectService,
-        IStructureRecognizer recognizer, ILogService logger)
+        IStructureRecognizer recognizer, IEditService editService, IConfigService config,
+        ILogService logger)
     {
         _fileService = fileService;
         _projectService = projectService;
         _recognizer = recognizer;
+        _editService = editService;
+        _config = config;
         _logger = logger;
         _logger.Debug("MainViewModel 初始化");
     }
@@ -67,6 +72,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isRecognizing;
+
+    [ObservableProperty]
+    private double _recognitionProgress;
 
     [RelayCommand]
     private async Task OpenFileAsync()
@@ -410,6 +418,39 @@ public partial class MainViewModel : ObservableObject
         StatusText = SearchResultText;
     }
 
+    /// <summary>从选中的字节区间创建结构字段</summary>
+    public void CreateFieldFromSelection(long offset, long length)
+    {
+        if (_buffer == null) return;
+        var root = StructureTree.RootNode;
+        if (root == null)
+        {
+            // 无识别结果时创建根节点
+            root = new StructureNode
+            {
+                Name = "手动字段",
+                Offset = offset,
+                Length = length,
+                DataType = FieldDataType.Bytes,
+                Source = StructureNodeSource.UserCreated,
+            };
+            StructureTree.LoadTree(root);
+            return;
+        }
+        var field = _editService.AddField(root, $"字段 @ 0x{offset:X}", offset, length);
+        _logger.Info($"创建字段: {field.Name} @ 0x{offset:X}, 长度 {length}");
+        StatusText = $"已创建字段 @ 0x{offset:X}";
+    }
+
+    public IConfigService Config => _config;
+
+    [RelayCommand]
+    private void ShowSettings()
+    {
+        var win = new Views.SettingsWindow(this);
+        win.ShowDialog();
+    }
+
     [RelayCommand]
     private async Task RecognizeAsync()
     {
@@ -424,6 +465,7 @@ public partial class MainViewModel : ObservableObject
                 new Progress<RecognitionProgress>(p =>
                 {
                     StatusText = p.StatusText;
+                    RecognitionProgress = p.Percentage;
                 }));
 
             StructureTree.LoadTree(result);
@@ -438,6 +480,7 @@ public partial class MainViewModel : ObservableObject
         finally
         {
             IsRecognizing = false;
+            RecognitionProgress = 0;
         }
     }
 

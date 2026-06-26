@@ -22,8 +22,17 @@ public partial class HexEditorView : UserControl
         // 右键菜单"添加书签"
         HexViewControl.BookmarkRequested += OnBookmarkRequested;
 
+        // 右键菜单"创建字段"
+        HexViewControl.CreateFieldRequested += OnCreateFieldRequested;
+
         // HexView 选择变更 → 实时预览 + 结构树高亮
         HexViewControl.Selection.SelectionChanged += OnHexSelectionChanged;
+    }
+
+    private void OnCreateFieldRequested(long offset, long length)
+    {
+        if (DataContext is MainViewModel mainVm)
+            mainVm.CreateFieldFromSelection(offset, length);
     }
 
     private void OnBookmarkRequested(long offset)

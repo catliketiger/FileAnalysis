@@ -34,8 +34,11 @@ public class RuleEngine : IRuleEngine
         }
         else if (extension is ".yaml" or ".yml")
         {
-            // YAML support requires YamlDotNet - simple JSON fallback for now
-            throw new NotSupportedException("YAML 格式支持需要安装 YamlDotNet 包。请使用 JSON 格式。");
+            var yaml = File.ReadAllText(filePath);
+            var deserializer = new YamlDotNet.Serialization.DeserializerBuilder()
+                .IgnoreUnmatchedProperties()
+                .Build();
+            rule = deserializer.Deserialize<FormatRule>(yaml);
         }
         else
         {
