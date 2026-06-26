@@ -185,9 +185,6 @@
                              Maximum="100" Height="14" Width="100"
                              Visibility="{Binding IsRecognizing, Converter={StaticResource BoolToVisibility}}"/>
             </StatusBarItem>
-            <StatusBarItem>
-                <TextBlock Text="{Binding FileInfoText}"/>
-            </StatusBarItem>
         </StatusBar>
     </Grid>
 </Window>
