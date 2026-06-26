@@ -275,16 +275,10 @@ public partial class StructureTreeView : UserControl
         {
             var json = File.ReadAllText(openDialog.FileName);
             var imported = StructureTreeViewModel.ImportFromJson(json);
-            if (StructureTreeViewModel.GetDepth(item.Node) + imported.Children.Count > 15)
-            {
-                MessageBox.Show("导入的结构嵌套深度不能超过 15 层", "限制", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            foreach (var child in imported.Children)
-            {
-                item.Node.AddChild(child);
-            }
-            mainVm.StructureTree.RefreshTree();
+            // 清空原树，用导入的结构替换
+            mainVm.StructureTree.Clear();
+            mainVm.StructureTree.LoadTree(imported);
+            mainVm.StructureTree.RootNode.Source = StructureNodeSource.UserCreated;
             mainVm.StatusText = $"已从 {openDialog.FileName} 导入结构";
         }
         catch (Exception ex)
