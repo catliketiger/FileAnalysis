@@ -220,10 +220,154 @@ public class StructureRecognizer : IStructureRecognizer
         }
         _confidenceScorer.Propagate(root);
 
+        // 格式特定的后处理
+        if (signatureMatches.Count > 0 && string.Equals(signatureMatches[0].Definition.FormatName, "PDF", StringComparison.OrdinalIgnoreCase))
+        {
+            var pdfNode = root.Children.FirstOrDefault(c => c.Name == "PDF");
+            if (pdfNode != null)
+                PostProcessPdf(buffer, pdfNode);
+        }
+
         progress?.Report(new RecognitionProgress(100, "结构识别完成"));
         _logger.Info($"结构识别完成，共 {CountNodes(root)} 个节点");
 
         return Task.FromResult(root);
+    }
+
+    /// <summary>
+    /// PDF 后处理：从文件尾扫描 xref 表和 trailer，添加结构节点
+    /// </summary>
+    private static void PostProcessPdf(BinaryBuffer buffer, StructureNode pdfNode)
+    {
+        try
+        {
+            // 扫描文件末尾查找 %%EOF（PDF 标准规定最后一行）
+            var tailSize = (int)Math.Min(buffer.Length, 1024);
+            var tailOffset = buffer.Length - tailSize;
+            var tail = buffer.ReadBytes(tailOffset, tailSize);
+            var tailStr = System.Text.Encoding.ASCII.GetString(tail);
+
+            // 查找最后一个 %%EOF
+            var eofIdx = tailStr.LastIndexOf("%%EOF", StringComparison.Ordinal);
+            if (eofIdx < 0) return;
+
+            // 向前查找 startxref（在 %%EOF 之前两行）
+            var beforeEof = tailStr[..eofIdx];
+            var lines = beforeEof.Split('\n', '\r');
+            string? startxrefLine = null;
+            for (int i = lines.Length - 1; i >= 0; i--)
+            {
+                var trimmed = lines[i].Trim();
+                if (trimmed.Length > 0 && long.TryParse(trimmed, out _))
+                {
+                    startxrefLine = trimmed;
+                    break;
+                }
+            }
+            if (startxrefLine == null) return;
+            var xrefOffset = long.Parse(startxrefLine);
+            if (xrefOffset < 0 || xrefOffset >= buffer.Length) return;
+
+            // 读取 xref 表
+            var xrefSize = (int)Math.Min(buffer.Length - xrefOffset, 4096);
+            var xrefData = buffer.ReadBytes(xrefOffset, xrefSize);
+            var xrefStr = System.Text.Encoding.ASCII.GetString(xrefData);
+
+            // 解析 xref 头部："xref\r\n" 或 "xref\n"
+            if (!xrefStr.StartsWith("xref", StringComparison.Ordinal)) return;
+            var xrefLines = xrefStr.Split('\n', '\r')
+                .Select(l => l.Trim()).Where(l => l.Length > 0).ToArray();
+
+            // 解析 xref 子段: "startObjId objCount"
+            int totalObjects = 0;
+            int iLine = 0;
+            while (iLine < xrefLines.Length)
+            {
+                var parts = xrefLines[iLine].Split(' ');
+                if (parts.Length == 2 && int.TryParse(parts[0], out _) && int.TryParse(parts[1], out var count))
+                {
+                    totalObjects += count;
+                    iLine++;
+                    // 跳过 entry 行
+                    for (int e = 0; e < count && iLine < xrefLines.Length; e++)
+                        iLine++;
+                }
+                else if (xrefLines[iLine] == "xref")
+                {
+                    iLine++;
+                }
+                else break; // 到达 trailer
+            }
+
+            // 查找 trailer
+            var trailerIdx = xrefStr.IndexOf("trailer", StringComparison.Ordinal);
+            if (trailerIdx < 0) return;
+            var trailerPart = xrefStr[trailerIdx..];
+
+            // 添加 xref 节点
+            pdfNode.AddChild(new StructureNode
+            {
+                Name = $"Xref Table ({totalObjects} objects)",
+                Offset = xrefOffset,
+                Length = trailerIdx,
+                DataType = FieldDataType.Bytes,
+                Confidence = 0.9,
+                Source = StructureNodeSource.AutoDetected,
+                Description = $"交叉引用表，共 {totalObjects} 个对象",
+            });
+
+            // 解析 trailer 字典
+            var trailerNode = new StructureNode
+            {
+                Name = "Trailer",
+                Offset = xrefOffset + trailerIdx,
+                Length = trailerPart.Length,
+                DataType = FieldDataType.Struct,
+                Confidence = 0.9,
+                Source = StructureNodeSource.AutoDetected,
+            };
+
+            // 提取关键字典条目
+            AddTrailerEntry(trailerNode, trailerPart, "/Size", "对象总数");
+            AddTrailerEntry(trailerNode, trailerPart, "/Root", "根对象引用");
+            AddTrailerEntry(trailerNode, trailerPart, "/Info", "文档信息引用");
+            AddTrailerEntry(trailerNode, trailerPart, "/Pages", "页面目录引用");
+
+            if (trailerNode.Children.Count > 0)
+                pdfNode.AddChild(trailerNode);
+        }
+        catch (Exception ex)
+        {
+            // PDF 解析失败不中断识别过程
+            System.Diagnostics.Debug.WriteLine($"[PDF] 后处理异常: {ex.Message}");
+        }
+    }
+
+    private static void AddTrailerEntry(StructureNode parent, string trailer, string key, string label)
+    {
+        var idx = trailer.IndexOf(key, StringComparison.Ordinal);
+        if (idx < 0) return;
+
+        // 提取键后的值（直到遇到 >> 或下一个 /）
+        var valueStart = idx + key.Length;
+        var valueEnd = valueStart;
+        while (valueEnd < trailer.Length && trailer[valueEnd] != '>' && trailer[valueEnd] != '/')
+            valueEnd++;
+        if (valueEnd == valueStart) return;
+
+        var value = trailer[valueStart..valueEnd].Trim();
+        if (value.Length > 40) value = value[..40] + "...";
+
+        parent.AddChild(new StructureNode
+        {
+            Name = $"{key} ({label})",
+            Offset = parent.Offset + idx,
+            Length = valueEnd - idx,
+            DataType = FieldDataType.ASCII,
+            Confidence = 0.8,
+            Source = StructureNodeSource.AutoDetected,
+            Description = value,
+        });
     }
 
     /// <summary>获取动态偏移格式的基址偏移量</summary>
