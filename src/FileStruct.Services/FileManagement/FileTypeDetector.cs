@@ -315,7 +315,14 @@ public class FileTypeDetector : IFileTypeDetector
         // 优先基于魔数匹配
         var headerResult = DetectByHeader(headerBytes);
         if (headerResult.Category != FileCategory.Unknown && headerResult.Category != FileCategory.Binary)
+        {
+            // 魔数匹配成功时补充扩展名信息
+            var ext = Path.GetExtension(filePath);
+            if (!string.IsNullOrEmpty(ext) && string.IsNullOrEmpty(headerResult.Extension))
+                return new FileTypeInfo(headerResult.Category, ext, headerResult.DisplayName,
+                    false, null, headerResult.MimeType);
             return headerResult;
+        }
 
         // 其次基于扩展名判断
         var extResult = DetectByExtension(filePath);
