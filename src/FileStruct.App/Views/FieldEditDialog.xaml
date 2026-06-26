@@ -1,0 +1,102 @@
+<Window x:Class="FileStruct.App.Views.FieldEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:FileStruct.App.ViewModels"
+        Title="{Binding WindowTitle}" Height="360" Width="420"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="字段名称:" VerticalAlignment="Center"/>
+                <TextBox Grid.Column="1" Text="{Binding FieldName, UpdateSourceTrigger=PropertyChanged}"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="文件偏移:" VerticalAlignment="Center"/>
+                <TextBox Grid.Column="1" Text="{Binding OffsetHex, UpdateSourceTrigger=PropertyChanged}"
+                         FontFamily="Consolas"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="数据长度:" VerticalAlignment="Center"/>
+                <TextBox Grid.Column="1" Text="{Binding FieldLength, UpdateSourceTrigger=PropertyChanged}"
+                         TextAlignment="Right"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="数据类型:" VerticalAlignment="Center"/>
+                <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:FieldEditViewModel.AllDataTypes}"
+                          SelectedItem="{Binding DataType}"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="字节序:" VerticalAlignment="Center"/>
+                <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:FieldEditViewModel.AllEndianness}"
+                          SelectedItem="{Binding Endianness}"/>
+            </Grid>
+
+            <GroupBox Header="魔数/签名（可选）" Margin="0,8,0,0" Padding="8">
+                <StackPanel>
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="魔数字节:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Text="{Binding MagicHex, UpdateSourceTrigger=PropertyChanged}"
+                                 FontFamily="Consolas" ToolTip="十六进制，空格分隔，例如 48 65 6C 6C"/>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="魔数偏移:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Text="{Binding MagicOffset, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="{Binding ErrorText}" Foreground="Red" VerticalAlignment="Center" FontSize="11"/>
+            <Button Grid.Column="1" Content="确定" Width="70" Height="28"
+                    Command="{Binding OkCommand}" IsDefault="True"/>
+            <Button Grid.Column="3" Content="取消" Width="70" Height="28"
+                    Command="{Binding CancelCommand}" IsCancel="True"/>
+        </Grid>
+    </Grid>
+</Window>

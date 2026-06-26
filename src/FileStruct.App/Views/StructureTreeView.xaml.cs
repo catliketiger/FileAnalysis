@@ -1,7 +1,12 @@
+using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using FileStruct.App.ViewModels;
+using FileStruct.Core.Interfaces;
+using FileStruct.Core.Models;
 
 namespace FileStruct.App.Views;
 
@@ -40,6 +45,162 @@ public partial class StructureTreeView : UserControl
             {
                 _isSyncingSelection = false;
             }
+        }
+    }
+
+    // ===== 右键菜单 =====
+
+    private TreeItemViewModel? _contextNode;
+
+    private void StructTree_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (e.OriginalSource is FrameworkElement fe)
+        {
+            var tvi = fe as TreeViewItem ?? FindParent<TreeViewItem>(fe);
+            _contextNode = tvi?.DataContext as TreeItemViewModel;
+            if (tvi != null && _contextNode != null)
+            {
+                tvi.ContextMenu = TryFindResource("NodeContextMenu") as ContextMenu;
+            }
+        }
+        if (_contextNode == null) e.Handled = true;
+    }
+
+    private static T? FindParent<T>(DependencyObject child) where T : DependencyObject
+    {
+        while (child != null)
+        {
+            var parent = System.Windows.Media.VisualTreeHelper.GetParent(child);
+            if (parent is T result) return result;
+            child = parent;
+        }
+        return null;
+    }
+
+    private void OnAddChildField(object sender, RoutedEventArgs e)
+    {
+        var item = _contextNode;
+        if (item == null || DataContext is not MainViewModel mainVm) return;
+
+        var vm = FieldEditViewModel.ForNew(item.Node);
+        var dialog = new FieldEditDialog(vm);
+        if (dialog.ShowDialog() == true)
+        {
+            var node = new StructureNode
+            {
+                Name = vm.FieldName,
+                Offset = vm.ParsedOffset,
+                Length = vm.FieldLength,
+                DataType = vm.DataType,
+                Endianness = vm.Endianness,
+                Confidence = 1.0,
+                Source = StructureNodeSource.UserCreated,
+            };
+            mainVm.StructureTree.AddChildNode(item.Node, node);
+            mainVm.StructureTree.RefreshTree();
+            mainVm.StatusText = $"已添加字段: {node.Name} @ 0x{node.Offset:X}";
+        }
+    }
+
+    private void OnDeleteField(object sender, RoutedEventArgs e)
+    {
+        var item = _contextNode;
+        if (item == null || DataContext is not MainViewModel mainVm) return;
+        if (item.Node.Parent == null) return; // 根节点不可删
+
+        var result = MessageBox.Show($"确认删除字段 \"{item.Node.Name}\" 及其子节点？",
+            "删除字段", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (result != MessageBoxResult.Yes) return;
+
+        mainVm.StructureTree.DeleteNode(item.Node);
+        mainVm.StructureTree.RefreshTree();
+        mainVm.StatusText = $"已删除字段: {item.Node.Name}";
+    }
+
+    private void OnEditField(object sender, RoutedEventArgs e)
+    {
+        var item = _contextNode;
+        if (item == null || DataContext is not MainViewModel mainVm) return;
+
+        var vm = FieldEditViewModel.ForEdit(item.Node);
+        var dialog = new FieldEditDialog(vm);
+        if (dialog.ShowDialog() == true)
+        {
+            item.Node.Name = vm.FieldName;
+            var newOffset = vm.ParsedOffset;
+            if (newOffset != item.Node.Offset)
+            {
+                item.Node.Offset = newOffset;
+                item.Node.Source = StructureNodeSource.UserModified;
+            }
+            if (vm.FieldLength != item.Node.Length)
+            {
+                item.Node.Length = vm.FieldLength;
+                item.Node.Source = StructureNodeSource.UserModified;
+            }
+            if (vm.DataType != item.Node.DataType)
+            {
+                item.Node.DataType = vm.DataType;
+                item.Node.Source = StructureNodeSource.UserModified;
+            }
+            item.Node.Endianness = vm.Endianness;
+            mainVm.StatusText = $"已更新字段: {item.Node.Name}";
+        }
+    }
+
+    private void OnExportStructure(object sender, RoutedEventArgs e)
+    {
+        var item = _contextNode;
+        if (item == null || DataContext is not MainViewModel mainVm) return;
+
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "导出结构定义",
+            DefaultExt = ".json",
+            Filter = "JSON 规则文件 (*.json)|*.json"
+        };
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            var json = StructureTreeViewModel.ExportAsJson(item.Node, item.Node.Name);
+            File.WriteAllText(dialog.FileName, json);
+            mainVm.StatusText = $"结构已导出: {dialog.FileName}";
+        }
+        catch (Exception ex)
+        {
+            mainVm.StatusText = $"导出失败: {ex.Message}";
+        }
+    }
+
+    private void OnImportStructure(object sender, RoutedEventArgs e)
+    {
+        var item = _contextNode;
+        if (item == null || DataContext is not MainViewModel mainVm) return;
+
+        var openDialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "导入结构定义",
+            DefaultExt = ".json",
+            Filter = "JSON 规则文件 (*.json)|*.json"
+        };
+        if (openDialog.ShowDialog() != true) return;
+
+        try
+        {
+            var json = File.ReadAllText(openDialog.FileName);
+            var imported = StructureTreeViewModel.ImportFromJson(json);
+            // 将导入的子节点添加到当前节点下
+            foreach (var child in imported.Children)
+            {
+                item.Node.AddChild(child);
+            }
+            mainVm.StructureTree.RefreshTree();
+            mainVm.StatusText = $"已从 {openDialog.FileName} 导入结构";
+        }
+        catch (Exception ex)
+        {
+            mainVm.StatusText = $"导入失败: {ex.Message}";
         }
     }
 

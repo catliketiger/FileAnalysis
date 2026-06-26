@@ -24,7 +24,8 @@
         <TreeView Grid.Row="1" x:Name="StructTree"
                   ItemsSource="{Binding StructureTree.RootItems}"
                   BorderThickness="1"
-                  FontSize="12">
+                  FontSize="12"
+                  ContextMenuOpening="StructTree_ContextMenuOpening">
             <TreeView.ItemContainerStyle>
                 <Style TargetType="TreeViewItem">
                     <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
@@ -32,6 +33,14 @@
                 </Style>
             </TreeView.ItemContainerStyle>
             <TreeView.Resources>
+                <ContextMenu x:Key="NodeContextMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                    <MenuItem Header="添加子字段" Click="OnAddChildField"/>
+                    <MenuItem Header="删除字段" Click="OnDeleteField"/>
+                    <MenuItem Header="编辑字段…" Click="OnEditField"/>
+                    <Separator/>
+                    <MenuItem Header="导出结构…" Click="OnExportStructure"/>
+                    <MenuItem Header="导入结构…" Click="OnImportStructure"/>
+                </ContextMenu>
                 <HierarchicalDataTemplate DataType="{x:Type local:TreeItemViewModel}"
                                           ItemsSource="{Binding Children}">
                     <StackPanel Orientation="Horizontal" ToolTip="{Binding Path=Node.Description}">

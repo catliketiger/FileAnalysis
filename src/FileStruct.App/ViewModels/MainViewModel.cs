@@ -506,6 +506,7 @@ public partial class MainViewModel : ObservableObject
             return;
         }
         var field = _editService.AddField(root, $"字段 @ 0x{offset:X}", offset, length);
+        StructureTree.RefreshTree();
         _logger.Info($"创建字段: {field.Name} @ 0x{offset:X}, 长度 {length}");
         StatusText = $"已创建字段 @ 0x{offset:X}";
     }
