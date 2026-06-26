@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Windows desktop tool for binary file structure analysis — automatically identifies and visualizes the internal layout of unknown binary files through signature matching and heuristic inference, with a hex view + structure tree as the core interaction model.
 
-**Current status**: V1.1. C# .NET 10 WPF, with dual-engine structure recognition, structure tree + bidir linkage, manual editing + undo/redo, custom format rules, live decode preview, bookmarks, byte search, hex tools, base converter, and 18 predefined format structure rules. 87 xUnit tests passing.
+**Current status**: V1.2. C# .NET 10 WPF, with dual-engine structure recognition, 30+ predefined format structure rules with sequential/schema support, structure tree save/restore, PE dynamic offset handling, 87+ xUnit tests passing.
 
 ## Tech Stack
 
@@ -113,8 +113,8 @@ From `.spec/开发规范.md`:
 | Version | Focus | Key Deliverables |
 |---------|-------|-----------------|
 | V0.1 MVP | Core viewing & project persistence | File loading, hex view, text view, project save/open |
-| V1.1 Core | Auto-recognition + manual annotation loop | Dual-engine recognition, structure tree ↔ hex linkage, manual editing, custom format rules, hex tools, live preview, bookmarks, byte search, context menus, 18 built-in format rules, PE dynamic offsets, rule export |
-| V1.5 Pro | Advanced analysis | File diff, split views, theming, rule management, structure export |
+| V1.1 Core | Feature completion round 1 | Byte search, context menus, 18 built-in format rules, PE dynamic offsets, rule export, live preview, bookmarks, hex tools |
+| V1.2 Core | Format rules + save/restore | Sequential mode for rules, 30+ format structure rules (SQLite/ISO/OLE2/ICO/Mach-O/WOFF/DEB/AIFF/RTF/MPEG-TS), structure tree save/restore in .fstruct, .ts dual detection (TS/MPEG-TS), ISO 64KB header scan, hash calc deadlock fix, DTO-based serialization |
 | V2.0 AI | Intelligent extension | LLM-powered structure recognition, batch classification |
 
 ## Development Conventions
