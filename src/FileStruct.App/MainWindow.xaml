@@ -66,10 +66,10 @@
 
         <!-- 工具栏 -->
         <ToolBar Grid.Row="1" Band="1">
-            <Button Content="📂 打开" Command="{Binding OpenFileCommand}"/>
+            <Button Content="📂 打开文件" Command="{Binding OpenFileCommand}"/>
             <Button Content="🔍 识别" Command="{Binding RecognizeCommand}"/>
             <Separator/>
-            <Button Content="💾 保存" Command="{Binding SaveProjectCommand}"/>
+            <Button Content="💾 保存项目" Command="{Binding SaveProjectCommand}"/>
             <Separator/>
             <Label Content="偏移(0x): " VerticalAlignment="Center" FontSize="11"/>
             <TextBox Text="{Binding GotoOffsetText, UpdateSourceTrigger=PropertyChanged}"
