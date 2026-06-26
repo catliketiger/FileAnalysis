@@ -6,29 +6,78 @@ public static class BuiltinSignatures
 {
     public static List<SignatureDefinition> GetAll() => new()
     {
-        // 图片格式
+        // ═══ 图片 ═══
         new("PNG", [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
             description: "PNG 图片"),
-        new("BMP", [0x42, 0x4D], description: "BMP 位图"),
         new("JPEG", [0xFF, 0xD8, 0xFF], description: "JPEG 图片"),
         new("GIF", [0x47, 0x49, 0x46, 0x38], description: "GIF 图片"),
+        new("BMP", [0x42, 0x4D], description: "BMP 位图"),
+        new("TIFF-LE", [0x49, 0x49, 0x2A, 0x00], description: "TIFF 图片 (小端)"),
+        new("TIFF-BE", [0x4D, 0x4D, 0x00, 0x2A], description: "TIFF 图片 (大端)"),
+        new("PSD", [0x38, 0x42, 0x50, 0x53], description: "PSD 文件"),
+        new("ICO", [0x00, 0x00, 0x01, 0x00], description: "ICO 图标"),
+        new("WebP", [0x52, 0x49, 0x46, 0x46], description: "WebP 图片"), // RIFF header + WEBP
 
-        // 压缩/归档
+        // ═══ 音频 ═══
+        new("MP3-ID3", [0x49, 0x44, 0x33], description: "MP3 音频 (ID3 标签)"),
+        new("WAV", [0x52, 0x49, 0x46, 0x46], description: "WAV 音频"), // RIFF header
+        new("FLAC", [0x66, 0x4C, 0x61, 0x43], description: "FLAC 音频"),
+        new("OGG", [0x4F, 0x67, 0x67, 0x53], description: "OGG 音频/视频"),
+        new("MIDI", [0x4D, 0x54, 0x68, 0x64], description: "MIDI 文件"),
+        new("AIFF", [0x46, 0x4F, 0x52, 0x4D], description: "AIFF 音频"), // FORM header
+
+        // ═══ 视频 ═══
+        new("AVI", [0x52, 0x49, 0x46, 0x46], description: "AVI 视频"), // RIFF header + AVI
+        new("MKV", [0x1A, 0x45, 0xDF, 0xA3], description: "MKV/WebM 视频"),
+        new("FLV", [0x46, 0x4C, 0x56], description: "FLV 视频"),
+        new("MP4", [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70],
+            description: "MP4/MOV 视频"),
+
+        // ═══ 压缩/归档 ═══
         new("ZIP", [0x50, 0x4B, 0x03, 0x04], description: "ZIP 压缩包"),
+        new("ZIP-Empty", [0x50, 0x4B, 0x05, 0x06], description: "ZIP 空归档"),
         new("RAR", [0x52, 0x61, 0x72, 0x21, 0x1A, 0x07], description: "RAR 压缩包"),
         new("GZip", [0x1F, 0x8B, 0x08], description: "GZip 压缩文件"),
+        new("BZip2", [0x42, 0x5A, 0x68], description: "BZip2 压缩文件"),
+        new("XZ", [0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00], description: "XZ 压缩文件"),
+        new("Zstd", [0x28, 0xB5, 0x2F, 0xFD], description: "Zstd 压缩文件"),
+        new("7z", [0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C], description: "7z 压缩包"),
+        new("CAB", [0x49, 0x53, 0x63, 0x28], description: "CAB 压缩包"),
 
-        // 可执行文件
+        // ═══ 可执行文件 ═══
         new("PE", [0x4D, 0x5A], description: "Windows PE 可执行文件"),
         new("ELF", [0x7F, 0x45, 0x4C, 0x46], description: "ELF 可执行文件"),
+        new("Mach-O-32", [0xFE, 0xED, 0xFA, 0xCE], description: "Mach-O (32-bit BE)"),
+        new("Mach-O-64", [0xFE, 0xED, 0xFA, 0xCF], description: "Mach-O (64-bit BE)"),
+        new("Mach-O-32-LE", [0xCE, 0xFA, 0xED, 0xFE], description: "Mach-O (32-bit LE)"),
+        new("Mach-O-64-LE", [0xCF, 0xFA, 0xED, 0xFE], description: "Mach-O (64-bit LE)"),
+        new("DEB", [0x21, 0x3C, 0x61, 0x72, 0x63, 0x68, 0x3E],
+            description: "Debian 软件包"), // !<arch>
+        new("RPM", [0xED, 0xAB, 0xEE, 0xDB], description: "RPM 软件包"),
 
-        // 文档
+        // ═══ 文档 ═══
         new("PDF", [0x25, 0x50, 0x44, 0x46], description: "PDF 文档"),
+        new("OLE2", [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1],
+            description: "OLE2 复合文档 (DOC/XLS/PPT/MSI 等)"),
+        new("RTF", [0x7B, 0x5C, 0x72, 0x74, 0x66], description: "RTF 文档"),
 
-        // 其他
+        // ═══ 字体 ═══
+        new("TTF", [0x00, 0x01, 0x00, 0x00, 0x00], description: "TrueType 字体"),
+        new("OTF", [0x4F, 0x54, 0x54, 0x4F], description: "OpenType 字体"),
+        new("WOFF", [0x77, 0x4F, 0x46, 0x46], description: "WOFF 字体"),
+        new("WOFF2", [0x77, 0x4F, 0x46, 0x32], description: "WOFF2 字体"),
+
+        // ═══ 虚拟机/磁盘映像 ═══
+        new("VHD", [0x63, 0x6F, 0x6E, 0x65, 0x63, 0x74, 0x69, 0x78],
+            description: "VHD 虚拟磁盘"),
+        new("VHDX", [0x76, 0x68, 0x64, 0x78, 0x66, 0x69, 0x6C, 0x65],
+            description: "VHDX 虚拟磁盘"),
+        new("QCOW2", [0x51, 0x46, 0x49, 0xFB], description: "QCOW2 磁盘映像"),
+
+        // ═══ 其他 ═══
         new("Java Class", [0xCA, 0xFE, 0xBA, 0xBE], description: "Java Class 文件"),
-        new("Mach-O", [0xFE, 0xED, 0xFA, 0xCE], description: "Mach-O 可执行文件 (32-bit BE)"),
-        new("Mach-O", [0xFE, 0xED, 0xFA, 0xCF], description: "Mach-O 可执行文件 (64-bit BE)"),
-        new("RIFF", [0x52, 0x49, 0x46, 0x46], description: "RIFF 格式 (AVI/WAV)"),
+        new("RIFF", [0x52, 0x49, 0x46, 0x46], description: "RIFF 格式 (AVI/WAV 等)"),
+        new("ISO", [0x43, 0x44, 0x30, 0x30, 0x31], magicOffset: 0x8001,
+            description: "ISO 9660 光盘映像"),
     };
 }

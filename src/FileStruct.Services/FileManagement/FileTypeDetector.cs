@@ -200,26 +200,61 @@ public class FileTypeDetector : IFileTypeDetector
     // 常见文件魔数签名
     private static readonly List<(byte[] Magic, int Offset, FileCategory Category, string DisplayName, string MimeType)> MagicSignatures = new()
     {
-        // 图片
-        (new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }, 0, FileCategory.Image, "PNG 图片", "image/png"),
-        (new byte[] { 0x42, 0x4D }, 0, FileCategory.Image, "BMP 位图", "image/bmp"),
-        (new byte[] { 0xFF, 0xD8, 0xFF }, 0, FileCategory.Image, "JPEG 图片", "image/jpeg"),
-        (new byte[] { 0x47, 0x49, 0x46, 0x38 }, 0, FileCategory.Image, "GIF 图片", "image/gif"),
+        // ═══ 图片 ═══
+        ([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], 0, FileCategory.Image, "PNG 图片", "image/png"),
+        ([0x42, 0x4D], 0, FileCategory.Image, "BMP 位图", "image/bmp"),
+        ([0xFF, 0xD8, 0xFF], 0, FileCategory.Image, "JPEG 图片", "image/jpeg"),
+        ([0x47, 0x49, 0x46, 0x38], 0, FileCategory.Image, "GIF 图片", "image/gif"),
+        ([0x49, 0x49, 0x2A, 0x00], 0, FileCategory.Image, "TIFF 图片", "image/tiff"),
+        ([0x4D, 0x4D, 0x00, 0x2A], 0, FileCategory.Image, "TIFF 图片", "image/tiff"),
+        ([0x38, 0x42, 0x50, 0x53], 0, FileCategory.Image, "PSD 文件", "image/vnd.adobe.photoshop"),
+        ([0x00, 0x00, 0x01, 0x00], 0, FileCategory.Image, "ICO 图标", "image/x-icon"),
 
-        // 压缩/归档
-        (new byte[] { 0x50, 0x4B, 0x03, 0x04 }, 0, FileCategory.Archive, "ZIP 压缩包", "application/zip"),
-        (new byte[] { 0x52, 0x61, 0x72, 0x21, 0x1A, 0x07 }, 0, FileCategory.Archive, "RAR 压缩包", "application/vnd.rar"),
-        (new byte[] { 0x1F, 0x8B, 0x08 }, 0, FileCategory.Archive, "GZip 压缩文件", "application/gzip"),
+        // ═══ 音频 ═══
+        ([0x49, 0x44, 0x33], 0, FileCategory.Audio, "MP3 音频", "audio/mpeg"),
+        ([0x66, 0x4C, 0x61, 0x43], 0, FileCategory.Audio, "FLAC 音频", "audio/flac"),
+        ([0x4F, 0x67, 0x67, 0x53], 0, FileCategory.Audio, "OGG 音频", "audio/ogg"),
+        ([0x4D, 0x54, 0x68, 0x64], 0, FileCategory.Audio, "MIDI 文件", "audio/midi"),
 
-        // 可执行文件
-        (new byte[] { 0x4D, 0x5A }, 0, FileCategory.Executable, "Windows 可执行文件", "application/x-msdownload"),
-        (new byte[] { 0x7F, 0x45, 0x4C, 0x46 }, 0, FileCategory.Executable, "ELF 可执行文件", "application/x-elf"),
+        // ═══ 视频 ═══
+        ([0x1A, 0x45, 0xDF, 0xA3], 0, FileCategory.Video, "MKV/WebM 视频", "video/x-matroska"),
+        ([0x46, 0x4C, 0x56], 0, FileCategory.Video, "FLV 视频", "video/x-flv"),
 
-        // 文档
-        (new byte[] { 0x25, 0x50, 0x44, 0x46 }, 0, FileCategory.Document, "PDF 文档", "application/pdf"),
+        // ═══ 压缩/归档 ═══
+        ([0x50, 0x4B, 0x03, 0x04], 0, FileCategory.Archive, "ZIP 压缩包", "application/zip"),
+        ([0x52, 0x61, 0x72, 0x21, 0x1A, 0x07], 0, FileCategory.Archive, "RAR 压缩包", "application/vnd.rar"),
+        ([0x1F, 0x8B, 0x08], 0, FileCategory.Archive, "GZip 压缩文件", "application/gzip"),
+        ([0x42, 0x5A, 0x68], 0, FileCategory.Archive, "BZip2 压缩文件", "application/x-bzip2"),
+        ([0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00], 0, FileCategory.Archive, "XZ 压缩文件", "application/x-xz"),
+        ([0x28, 0xB5, 0x2F, 0xFD], 0, FileCategory.Archive, "Zstd 压缩文件", "application/zstd"),
+        ([0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C], 0, FileCategory.Archive, "7z 压缩包", "application/x-7z-compressed"),
+        ([0x49, 0x53, 0x63, 0x28], 0, FileCategory.Archive, "CAB 压缩包", "application/vnd.ms-cab-compressed"),
+
+        // ═══ 可执行文件 ═══
+        ([0x4D, 0x5A], 0, FileCategory.Executable, "Windows 可执行文件", "application/x-msdownload"),
+        ([0x7F, 0x45, 0x4C, 0x46], 0, FileCategory.Executable, "ELF 可执行文件", "application/x-elf"),
+        ([0x21, 0x3C, 0x61, 0x72, 0x63, 0x68, 0x3E], 0, FileCategory.Executable, "Debian 软件包", "application/vnd.debian.binary-package"),
+        ([0xED, 0xAB, 0xEE, 0xDB], 0, FileCategory.Executable, "RPM 软件包", "application/x-rpm"),
+
+        // ═══ 文档 ═══
+        ([0x25, 0x50, 0x44, 0x46], 0, FileCategory.Document, "PDF 文档", "application/pdf"),
+        ([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1], 0, FileCategory.Document, "OLE2 文档 (DOC/XLS/PPT)", "application/msword"),
+        ([0x7B, 0x5C, 0x72, 0x74, 0x66], 0, FileCategory.Document, "RTF 文档", "application/rtf"),
+
+        // ═══ 字体 ═══
+        ([0x00, 0x01, 0x00, 0x00, 0x00], 0, FileCategory.Binary, "TrueType 字体", "font/ttf"),
+        ([0x4F, 0x54, 0x54, 0x4F], 0, FileCategory.Binary, "OpenType 字体", "font/otf"),
+        ([0x77, 0x4F, 0x46, 0x46], 0, FileCategory.Binary, "WOFF 字体", "font/woff"),
+        ([0x77, 0x4F, 0x46, 0x32], 0, FileCategory.Binary, "WOFF2 字体", "font/woff2"),
+
+        // ═══ 虚拟机/磁盘映像 ═══
+        ([0x63, 0x6F, 0x6E, 0x65, 0x63, 0x74, 0x69, 0x78], 0, FileCategory.Binary, "VHD 虚拟磁盘", "application/x-vhd"),
+        ([0x76, 0x68, 0x64, 0x78, 0x66, 0x69, 0x6C, 0x65], 0, FileCategory.Binary, "VHDX 虚拟磁盘", "application/x-vhd"),
+        ([0x51, 0x46, 0x49, 0xFB], 0, FileCategory.Binary, "QCOW2 磁盘映像", "application/x-qemu-disk"),
+        ([0x43, 0x44, 0x30, 0x30, 0x31], 0x8001, FileCategory.Binary, "ISO 9660 光盘映像", "application/x-iso9660-image"),
 
         // 其他
-        (new byte[] { 0xCA, 0xFE, 0xBA, 0xBE }, 0, FileCategory.Binary, "Java Class 文件", "application/java-vm"),
+        ([0xCA, 0xFE, 0xBA, 0xBE], 0, FileCategory.Binary, "Java Class 文件", "application/java-vm"),
     };
 
     public FileTypeInfo DetectByExtension(string filePath)
