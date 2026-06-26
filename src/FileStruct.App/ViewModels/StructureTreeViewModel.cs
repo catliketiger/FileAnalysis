@@ -22,6 +22,9 @@ public partial class StructureTreeViewModel : ObservableObject
     private int _lastMatchIndex = -1;
     private List<TreeItemViewModel> _lastMatches = new();
 
+    // 内部导航标识：SearchTree 设置，阻止 SelectNodeByOffset 覆盖搜索结果
+    private bool _isInternalNavigation;
+
     /// <summary>
     /// 加载新的结构树
     /// </summary>
@@ -55,13 +58,21 @@ public partial class StructureTreeViewModel : ObservableObject
 
         // 移动到下一个匹配
         _lastMatchIndex = (_lastMatchIndex + 1) % _lastMatches.Count;
-        var found = _lastMatches[_lastMatchIndex];
 
-        ClearAllSelection(RootItems);
-        ExpandPathToTreeItem(found);
-        found.IsSelected = true;
-        SelectedNode = found.Node;
-        return true;
+        _isInternalNavigation = true;
+        try
+        {
+            var found = _lastMatches[_lastMatchIndex];
+            ClearAllSelection(RootItems);
+            ExpandPathToTreeItem(found);
+            found.IsSelected = true;
+            SelectedNode = found.Node;
+            return true;
+        }
+        finally
+        {
+            _isInternalNavigation = false;
+        }
     }
 
     /// <summary>
@@ -101,6 +112,22 @@ public partial class StructureTreeViewModel : ObservableObject
     public int GetTotalMatches() => _lastMatches.Count;
 
     /// <summary>
+    /// 设置内部导航状态（SearchTree/OnSelectedItemChanged 使用时阻止 HexView 回馈覆盖）
+    /// </summary>
+    public IDisposable BeginInternalNavigation()
+    {
+        _isInternalNavigation = true;
+        return new InternalNavigationGuard(this);
+    }
+
+    private readonly struct InternalNavigationGuard : IDisposable
+    {
+        private readonly StructureTreeViewModel _vm;
+        public InternalNavigationGuard(StructureTreeViewModel vm) => _vm = vm;
+        public void Dispose() => _vm._isInternalNavigation = false;
+    }
+
+    /// <summary>
     /// 清除树
     /// </summary>
     public void Clear()
@@ -112,10 +139,13 @@ public partial class StructureTreeViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 选中与指定偏移匹配的节点
+    /// 选中与指定偏移匹配的节点（内部导航时跳过，防止覆盖搜索/树节点选中）
     /// </summary>
     public StructureNode? SelectNodeByOffset(long offset)
     {
+        // 内部导航（搜索/树选中）正在进行时，阻止 HexView 回馈覆盖树选中
+        if (_isInternalNavigation) return null;
+
         if (RootNode == null) return null;
         var node = RootNode.FindByOffset(offset);
         if (node != null && node != RootNode)

@@ -24,6 +24,8 @@ public partial class StructureTreeView : UserControl
             DataContext is MainViewModel mainVm)
         {
             _isSyncingSelection = true;
+            // 内部导航标识：防止 HexView 回馈时 SelectNodeByOffset 覆盖树选中
+            using var guard = mainVm.StructureTree.BeginInternalNavigation();
             try
             {
                 var node = item.Node;
