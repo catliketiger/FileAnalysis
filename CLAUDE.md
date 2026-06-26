@@ -115,6 +115,7 @@ From `.spec/开发规范.md`:
 | V0.1 MVP | Core viewing & project persistence | File loading, hex view, text view, project save/open |
 | V1.1 Core | Feature completion round 1 | Byte search, context menus, 18 built-in format rules, PE dynamic offsets, rule export, live preview, bookmarks, hex tools |
 | V1.2 Core | Format rules + save/restore | Sequential mode for rules, 30+ format structure rules (SQLite/ISO/OLE2/ICO/Mach-O/WOFF/DEB/AIFF/RTF/MPEG-TS), structure tree save/restore in .fstruct, .ts dual detection (TS/MPEG-TS), ISO 64KB header scan, hash calc deadlock fix, DTO-based serialization |
+| V1.5 Pro | Advanced analysis | File diff (byte + field level), split views, theming, rule management, structure export (C struct/JSON), exception handling polish |
 | V2.0 AI | Intelligent extension | LLM-powered structure recognition, batch classification |
 
 ## Development Conventions
