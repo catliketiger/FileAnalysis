@@ -110,6 +110,9 @@ public class HexView : Control
     /// <summary>行数据源（供虚拟化 ItemsControl 使用）</summary>
     public HexRowList? RowList { get; private set; }
 
+    /// <summary>缓存的 ScrollViewer（用于快速获取可见行范围）</summary>
+    private ScrollViewer? _scrollViewer;
+
     #endregion
 
     #region 方法
@@ -133,6 +136,10 @@ public class HexView : Control
             listBox.PreviewMouseLeftButtonDown += OnListBoxEmptyClick;
             listBox.ContextMenuOpening += OnContextMenuOpening;
             listBox.ItemContainerGenerator.StatusChanged += (_, _) => UpdateRowHighlights();
+
+            // 缓存 ScrollViewer 用于快速可见行范围计算
+            if (_scrollViewer == null)
+                Loaded += (_, _) => _scrollViewer ??= FindVisualChild<ScrollViewer>(listBox);
 
             // 绑定右键菜单项（先移除再添加防重复）
             if (listBox.ContextMenu != null)
@@ -194,13 +201,20 @@ public class HexView : Control
         var hlBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(80, 66, 133, 244));
         var normalBrush = System.Windows.Media.Brushes.Transparent;
 
-        for (int i = 0; i < listBox.Items.Count; i++)
+        // 只遍历已生成的可见容器（大文件有数亿行，绝不能遍历 listBox.Items.Count）
+        var generator = listBox.ItemContainerGenerator;
+        if (generator.Status != System.Windows.Controls.Primitives.GeneratorStatus.ContainersGenerated)
+            return;
+
+        // 仅遍历可见行范围（大文件数亿行，绝不能遍历所有）
+        if (_scrollViewer == null) return;
+        var bytesPerRow = BytesPerRow > 0 ? BytesPerRow : 16;
+        int firstVisible = (int)(_scrollViewer.VerticalOffset);
+        int lastVisible = firstVisible + (int)(_scrollViewer.ViewportHeight / 20) + 1;
+        for (int i = firstVisible; i <= lastVisible; i++)
         {
-            if (listBox.ItemContainerGenerator.ContainerFromIndex(i) is ListBoxItem item && item.Content is HexRowData)
-            {
-                // 遍历行内的所有字节 Border 元素
+            if (generator.ContainerFromIndex(i) is ListBoxItem item && item.Content is HexRowData)
                 ApplyByteHighlights(item, selStart, selEnd, hlBrush, normalBrush);
-            }
         }
     }
 
@@ -387,10 +401,8 @@ public class HexView : Control
     {
         if (Buffer == null || RowList == null) return;
 
-        // 设置选中区间
-        Selection.ClearSelection();
-        Selection.BeginSelection(offset);
-        if (length > 1) Selection.ExtendSelection(offset + length - 1);
+        // 原子设置选中区间（只触发一次 SelectionChanged，替代 Clear+Begin+Extend 三次）
+        Selection.SetSelection(offset, length > 1 ? offset + length - 1 : offset);
 
         // 居中显示
         var listBox = GetTemplateChild("PART_ListBox") as ListBox;

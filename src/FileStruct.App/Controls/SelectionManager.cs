@@ -57,6 +57,17 @@ public class SelectionManager
     }
 
     /// <summary>
+    /// 原子设置选择范围（只触发一次事件，替代 Clear+Begin+Extend 三次触发）
+    /// </summary>
+    public void SetSelection(long startOffset, long endOffset)
+    {
+        _startOffset = startOffset;
+        _endOffset = endOffset;
+        _hasSelection = true;
+        NotifyChanged();
+    }
+
+    /// <summary>
     /// 判断指定偏移是否在选择范围内
     /// </summary>
     public bool IsSelected(long offset)
