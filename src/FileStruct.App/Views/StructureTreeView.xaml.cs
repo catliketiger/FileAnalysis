@@ -18,6 +18,25 @@ public partial class StructureTreeView : UserControl
     {
         InitializeComponent();
         StructTree.SelectedItemChanged += OnSelectedItemChanged;
+        BuildContextMenu();
+    }
+
+    private ContextMenu? _treeContextMenu;
+
+    private void BuildContextMenu()
+    {
+        _treeContextMenu = new ContextMenu();
+        _treeContextMenu.Items.Add(new MenuItem { Header = "添加子字段" });
+        _treeContextMenu.Items.Add(new MenuItem { Header = "删除字段" });
+        _treeContextMenu.Items.Add(new MenuItem { Header = "编辑字段…" });
+        _treeContextMenu.Items.Add(new Separator());
+        _treeContextMenu.Items.Add(new MenuItem { Header = "导出结构…" });
+        _treeContextMenu.Items.Add(new MenuItem { Header = "导入结构…" });
+        foreach (var item in _treeContextMenu.Items.OfType<MenuItem>())
+            item.Click += OnContextMenuItemClick;
+
+        // 挂到 TreeView 上保证右键能触发
+        StructTree.ContextMenu = _treeContextMenu;
     }
 
     private void OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -58,25 +77,13 @@ public partial class StructureTreeView : UserControl
         {
             var tvi = fe as TreeViewItem ?? FindParent<TreeViewItem>(fe);
             _contextNode = tvi?.DataContext as TreeItemViewModel;
-            if (tvi != null && _contextNode != null)
+            if (_contextNode != null)
             {
-                // 动态创建 ContextMenu（避免 XAML 资源查找问题）
-                var menu = new ContextMenu();
-                menu.Items.Add(new MenuItem { Header = "添加子字段" });
-                menu.Items.Add(new MenuItem { Header = "删除字段" });
-                menu.Items.Add(new MenuItem { Header = "编辑字段…" });
-                menu.Items.Add(new Separator());
-                menu.Items.Add(new MenuItem { Header = "导出结构…" });
-                menu.Items.Add(new MenuItem { Header = "导入结构…" });
-                // 统一挂接 Click 事件
-                foreach (var item in menu.Items.OfType<MenuItem>())
-                {
-                    item.Click += OnContextMenuItemClick;
-                }
-                tvi.ContextMenu = menu;
-                return; // 让 WPF 继续打开菜单
+                // TreeView 级别的 ContextMenu 已由 BuildContextMenu 预先设好
+                return;
             }
         }
+        _contextNode = null;
         e.Handled = true;
     }
 
@@ -120,12 +127,21 @@ public partial class StructureTreeView : UserControl
     {
         var vm = FieldEditViewModel.ForNew(item.Node);
         var dialog = new FieldEditDialog(vm);
-        if (dialog.ShowDialog() == true)
+        while (dialog.ShowDialog() == true)
         {
+            var newOff = vm.ParsedOffset;
+            var newEnd = newOff + vm.FieldLength;
+            var parentEnd = item.Node.Offset + item.Node.Length;
+            if (newOff < item.Node.Offset || newEnd > parentEnd)
+            {
+                MessageBox.Show($"子字段范围 (0x{newOff:X} - 0x{newEnd:X}) 超出父节点范围 (0x{item.Node.Offset:X} - 0x{parentEnd:X})",
+                    "范围错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+                continue;
+            }
             var node = new StructureNode
             {
                 Name = vm.FieldName,
-                Offset = vm.ParsedOffset,
+                Offset = newOff,
                 Length = vm.FieldLength,
                 DataType = vm.DataType,
                 Endianness = vm.Endianness,
@@ -134,6 +150,7 @@ public partial class StructureTreeView : UserControl
             };
             mainVm.StructureTree.AddChildNode(item.Node, node);
             mainVm.StatusText = $"已添加字段: {node.Name} @ 0x{node.Offset:X}";
+            break;
         }
     }
 
@@ -153,18 +170,33 @@ public partial class StructureTreeView : UserControl
     {
         var vm = FieldEditViewModel.ForEdit(item.Node);
         var dialog = new FieldEditDialog(vm);
-        if (dialog.ShowDialog() == true)
+        while (dialog.ShowDialog() == true)
         {
-            item.Node.Name = vm.FieldName;
-            var newOffset = vm.ParsedOffset;
-            if (newOffset != item.Node.Offset)
+            var newOff = vm.ParsedOffset;
+            var newLen = vm.FieldLength;
+            var newEnd = newOff + newLen;
+
+            // 校验范围不超父节点
+            if (item.Node.Parent != null)
             {
-                item.Node.Offset = newOffset;
+                var parentEnd = item.Node.Parent.Offset + item.Node.Parent.Length;
+                if (newOff < item.Node.Parent.Offset || newEnd > parentEnd)
+                {
+                    MessageBox.Show($"字段范围 (0x{newOff:X} - 0x{newEnd:X}) 超出父节点范围 (0x{item.Node.Parent.Offset:X} - 0x{parentEnd:X})",
+                        "范围错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    continue;
+                }
+            }
+
+            item.Node.Name = vm.FieldName;
+            if (newOff != item.Node.Offset)
+            {
+                item.Node.Offset = newOff;
                 item.Node.Source = StructureNodeSource.UserModified;
             }
-            if (vm.FieldLength != item.Node.Length)
+            if (newLen != item.Node.Length)
             {
-                item.Node.Length = vm.FieldLength;
+                item.Node.Length = newLen;
                 item.Node.Source = StructureNodeSource.UserModified;
             }
             if (vm.DataType != item.Node.DataType)
@@ -174,6 +206,7 @@ public partial class StructureTreeView : UserControl
             }
             item.Node.Endianness = vm.Endianness;
             mainVm.StatusText = $"已更新字段: {item.Node.Name}";
+            break;
         }
     }
 
