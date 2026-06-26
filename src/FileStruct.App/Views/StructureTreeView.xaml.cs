@@ -133,7 +133,6 @@ public partial class StructureTreeView : UserControl
                 Source = StructureNodeSource.UserCreated,
             };
             mainVm.StructureTree.AddChildNode(item.Node, node);
-            mainVm.StructureTree.RefreshTree();
             mainVm.StatusText = $"已添加字段: {node.Name} @ 0x{node.Offset:X}";
         }
     }
@@ -147,7 +146,6 @@ public partial class StructureTreeView : UserControl
         if (result != MessageBoxResult.Yes) return;
 
         mainVm.StructureTree.DeleteNode(item.Node);
-        mainVm.StructureTree.RefreshTree();
         mainVm.StatusText = $"已删除字段: {item.Node.Name}";
     }
 

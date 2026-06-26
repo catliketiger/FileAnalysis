@@ -130,23 +130,42 @@ public partial class StructureTreeViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 添加子节点
+    /// 添加子节点（增量更新，不重置搜索状态）
     /// </summary>
     public void AddChildNode(StructureNode parent, StructureNode child)
     {
         parent.AddChild(child);
-        // 更新父节点长度
         var childEnd = child.Offset + child.Length;
         if (parent.Length < childEnd)
             parent.Length = childEnd;
+
+        // 增量更新 TreeItemViewModel 树（避免 RefreshTree 全量重建）
+        var parentItem = FindTreeItemByNode(RootItems, parent);
+        if (parentItem != null)
+        {
+            parentItem.Children.Add(CreateItem(child));
+        }
     }
 
     /// <summary>
-    /// 删除子节点
+    /// 删除子节点（增量更新，不重置搜索状态）
     /// </summary>
     public void DeleteNode(StructureNode node)
     {
-        node.Parent?.RemoveChild(node);
+        var parent = node.Parent;
+        parent?.RemoveChild(node);
+
+        // 增量更新 TreeItemViewModel 树
+        if (parent != null)
+        {
+            var parentItem = FindTreeItemByNode(RootItems, parent);
+            if (parentItem != null)
+            {
+                var childItem = parentItem.Children.FirstOrDefault(c => c.Node == node);
+                if (childItem != null)
+                    parentItem.Children.Remove(childItem);
+            }
+        }
     }
 
     /// <summary>
