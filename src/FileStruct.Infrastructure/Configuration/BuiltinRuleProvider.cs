@@ -418,7 +418,7 @@ public static class BuiltinRuleProvider
                 ("CheckSum", "uint32", 16, 4, null),
                 ("TimeDateStamp", "uint32", 20, 4, null),
                 ("Flags", "uint64", 24, 8, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule SqliteRule() => CreateRule("SQLite", "SQLite 数据库文件结构",
