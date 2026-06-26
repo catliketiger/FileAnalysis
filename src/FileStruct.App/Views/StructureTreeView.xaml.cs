@@ -60,10 +60,24 @@ public partial class StructureTreeView : UserControl
             _contextNode = tvi?.DataContext as TreeItemViewModel;
             if (tvi != null && _contextNode != null)
             {
-                tvi.ContextMenu = TryFindResource("NodeContextMenu") as ContextMenu;
+                // 动态创建 ContextMenu（避免 XAML 资源查找问题）
+                var menu = new ContextMenu();
+                menu.Items.Add(new MenuItem { Header = "添加子字段" });
+                menu.Items.Add(new MenuItem { Header = "删除字段" });
+                menu.Items.Add(new MenuItem { Header = "编辑字段…" });
+                menu.Items.Add(new Separator());
+                menu.Items.Add(new MenuItem { Header = "导出结构…" });
+                menu.Items.Add(new MenuItem { Header = "导入结构…" });
+                // 统一挂接 Click 事件
+                foreach (var item in menu.Items.OfType<MenuItem>())
+                {
+                    item.Click += OnContextMenuItemClick;
+                }
+                tvi.ContextMenu = menu;
+                return; // 让 WPF 继续打开菜单
             }
         }
-        if (_contextNode == null) e.Handled = true;
+        e.Handled = true;
     }
 
     private static T? FindParent<T>(DependencyObject child) where T : DependencyObject
@@ -77,11 +91,33 @@ public partial class StructureTreeView : UserControl
         return null;
     }
 
-    private void OnAddChildField(object sender, RoutedEventArgs e)
+    private void OnContextMenuItemClick(object sender, RoutedEventArgs e)
     {
+        if (sender is not MenuItem mi || _contextNode == null || DataContext is not MainViewModel mainVm) return;
         var item = _contextNode;
-        if (item == null || DataContext is not MainViewModel mainVm) return;
 
+        switch (mi.Header as string)
+        {
+            case "添加子字段":
+                AddChildField(item, mainVm);
+                break;
+            case "删除字段":
+                DeleteField(item, mainVm);
+                break;
+            case "编辑字段…":
+                EditField(item, mainVm);
+                break;
+            case "导出结构…":
+                ExportStructure(item, mainVm);
+                break;
+            case "导入结构…":
+                ImportStructure(item, mainVm);
+                break;
+        }
+    }
+
+    private void AddChildField(TreeItemViewModel item, MainViewModel mainVm)
+    {
         var vm = FieldEditViewModel.ForNew(item.Node);
         var dialog = new FieldEditDialog(vm);
         if (dialog.ShowDialog() == true)
@@ -102,10 +138,8 @@ public partial class StructureTreeView : UserControl
         }
     }
 
-    private void OnDeleteField(object sender, RoutedEventArgs e)
+    private void DeleteField(TreeItemViewModel item, MainViewModel mainVm)
     {
-        var item = _contextNode;
-        if (item == null || DataContext is not MainViewModel mainVm) return;
         if (item.Node.Parent == null) return; // 根节点不可删
 
         var result = MessageBox.Show($"确认删除字段 \"{item.Node.Name}\" 及其子节点？",
@@ -117,11 +151,8 @@ public partial class StructureTreeView : UserControl
         mainVm.StatusText = $"已删除字段: {item.Node.Name}";
     }
 
-    private void OnEditField(object sender, RoutedEventArgs e)
+    private void EditField(TreeItemViewModel item, MainViewModel mainVm)
     {
-        var item = _contextNode;
-        if (item == null || DataContext is not MainViewModel mainVm) return;
-
         var vm = FieldEditViewModel.ForEdit(item.Node);
         var dialog = new FieldEditDialog(vm);
         if (dialog.ShowDialog() == true)
@@ -148,11 +179,8 @@ public partial class StructureTreeView : UserControl
         }
     }
 
-    private void OnExportStructure(object sender, RoutedEventArgs e)
+    private void ExportStructure(TreeItemViewModel item, MainViewModel mainVm)
     {
-        var item = _contextNode;
-        if (item == null || DataContext is not MainViewModel mainVm) return;
-
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
             Title = "导出结构定义",
@@ -173,11 +201,8 @@ public partial class StructureTreeView : UserControl
         }
     }
 
-    private void OnImportStructure(object sender, RoutedEventArgs e)
+    private void ImportStructure(TreeItemViewModel item, MainViewModel mainVm)
     {
-        var item = _contextNode;
-        if (item == null || DataContext is not MainViewModel mainVm) return;
-
         var openDialog = new Microsoft.Win32.OpenFileDialog
         {
             Title = "导入结构定义",
@@ -190,7 +215,6 @@ public partial class StructureTreeView : UserControl
         {
             var json = File.ReadAllText(openDialog.FileName);
             var imported = StructureTreeViewModel.ImportFromJson(json);
-            // 将导入的子节点添加到当前节点下
             foreach (var child in imported.Children)
             {
                 item.Node.AddChild(child);
