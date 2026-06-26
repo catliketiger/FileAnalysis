@@ -154,7 +154,7 @@ public class HeuristicEngine : IHeuristicEngine
 
         foreach (var alignment in alignments)
         {
-            for (int offset = alignment; offset < data.Length - alignment; offset += alignment)
+            for (int offset = alignment; offset + 4 <= data.Length; offset += alignment)
             {
                 // 检查对齐边界处是否有值突变
                 var before = BitConverter.ToUInt32(data, offset - alignment);
