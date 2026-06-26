@@ -34,7 +34,10 @@ public static class BuiltinSignatures
         new("MPEG-TS", [0x47, 0x40, 0x00, 0x10], description: "MPEG-TS 传输流"),
         new("MPEG-TS", [0x47, 0x00, 0x00, 0x00], description: "MPEG-TS 传输流"),
         new("MP4", [0x66, 0x74, 0x79, 0x70], magicOffset: 4,
-            description: "MP4/MOV 视频"), // "ftyp" box at offset 4
+            description: "MP4 视频 (ISOBMFF)"), // "ftyp" box at offset 4
+        new("MOV", [0x6D, 0x6F, 0x6F, 0x76], magicOffset: 4,
+            minFileSize: 8,
+            description: "QuickTime MOV"), // "moov" box at offset 4
 
         // ═══ 压缩/归档 ═══
         new("ZIP", [0x50, 0x4B, 0x03, 0x04], description: "ZIP 压缩包"),

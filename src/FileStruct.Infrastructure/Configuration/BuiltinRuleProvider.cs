@@ -44,6 +44,7 @@ public static class BuiltinRuleProvider
         PsdRule(),
         PdfRule(),
         OggRule(),
+        Mp4Rule(),
     ];
 
     private static FormatRule CreateRule(string format, string desc,
@@ -667,6 +668,21 @@ public static class BuiltinRuleProvider
                 ("PageSeqNo", "uint32", 18, 4, null),
                 ("PageChecksum", "uint32", 22, 4, null),
                 ("PageSegments", "uint8", 26, 1, null),
+            ], false),
+        ]);
+
+    private static FormatRule Mp4Rule() => CreateRule("MP4", "MP4 视频文件结构",
+        [([0x66, 0x74, 0x79, 0x70], 4, 8)],
+        [
+            ("ftyp Box", [
+                ("BoxSize", "uint32", 0, 4, "BigEndian"),
+                ("BoxType", "ascii", 4, 4, null),
+                ("MajorBrand", "ascii", 8, 4, null),
+                ("MinorVersion", "uint32", 12, 4, "BigEndian"),
+                ("CompatibleBrands", "bytes", 16, 16, null),
+            ], false),
+            ("FileBody", [
+                ("Content", "bytes", 32, 0x100000, null),
             ], false),
         ]);
 }
