@@ -27,6 +27,15 @@ public static class BuiltinRuleProvider
         Id3v2Rule(),
         TiffRule(),
         TiffBeRule(),
+        IcoRule(),
+        RtfRule(),
+        WoffRule(),
+        Woff2Rule(),
+        Macho32Rule(),
+        Macho64Rule(),
+        AiffRule(),
+        DebRule(),
+        Ole2Rule(),
     ];
 
     private static FormatRule CreateRule(string format, string desc,
@@ -362,6 +371,156 @@ public static class BuiltinRuleProvider
                 ("ByteOrder", "ascii", 0, 2, null),
                 ("Magic", "uint16", 2, 2, null),
                 ("IFD0Offset", "uint32", 4, 4, null),
+            ]),
+        ]);
+
+    private static FormatRule IcoRule() => CreateRule("ICO", "ICO 图标文件结构",
+        [([0x00, 0x00, 0x01, 0x00], 0, 6)],
+        [
+            ("ICONDIR", [
+                ("Reserved", "uint16", 0, 2, null),
+                ("Type", "uint16", 2, 2, null),
+                ("Count", "uint16", 4, 2, null),
+            ]),
+            ("ICONDIRENTRY(1)", [
+                ("Width", "uint8", 6, 1, null),
+                ("Height", "uint8", 7, 1, null),
+                ("ColorCount", "uint8", 8, 1, null),
+                ("Reserved", "uint8", 9, 1, null),
+                ("Planes", "uint16", 10, 2, null),
+                ("BitCount", "uint16", 12, 2, null),
+                ("BytesInRes", "uint32", 14, 4, null),
+                ("ImageOffset", "uint32", 18, 4, null),
+            ]),
+        ]);
+
+    private static FormatRule RtfRule() => CreateRule("RTF", "RTF 富文本格式文件结构",
+        [([0x7B, 0x5C, 0x72, 0x74, 0x66], 0, 14)],
+        [
+            ("RTF Header", [
+                ("OpenBrace", "ascii", 0, 1, null),
+                ("BackslashRtf", "ascii", 1, 4, null),
+                ("Encoding", "ascii", 5, 2, null),
+                ("Ansicpg", "ascii", 7, 7, null),
+            ]),
+        ]);
+
+    private static FormatRule WoffRule() => CreateRule("WOFF", "WOFF 网页字体结构",
+        [([0x77, 0x4F, 0x46, 0x46], 0, 20)],
+        [
+            ("WOFF Header", [
+                ("Signature", "ascii", 0, 4, null),
+                ("Flavor", "uint32", 4, 4, null),
+                ("Length", "uint32", 8, 4, null),
+                ("NumTables", "uint16", 12, 2, null),
+                ("Reserved", "uint16", 14, 2, null),
+                ("TotalSfntSize", "uint32", 16, 4, null),
+            ]),
+        ]);
+
+    private static FormatRule Woff2Rule() => CreateRule("WOFF2", "WOFF2 网页字体结构",
+        [([0x77, 0x4F, 0x46, 0x32], 0, 20)],
+        [
+            ("WOFF2 Header", [
+                ("Signature", "ascii", 0, 4, null),
+                ("Flavor", "uint32", 4, 4, null),
+                ("Length", "uint32", 8, 4, null),
+                ("NumTables", "uint16", 12, 2, null),
+                ("Reserved", "uint16", 14, 2, null),
+                ("TotalSfntSize", "uint32", 16, 4, null),
+            ]),
+        ]);
+
+    private static FormatRule Macho32Rule() => CreateRule("Mach-O-32", "Mach-O 可执行文件 (32位)",
+        [([0xFE, 0xED, 0xFA, 0xCE], 0, 28), ([0xCE, 0xFA, 0xED, 0xFE], 0, 28)],
+        [
+            ("Mach-O Header (32-bit)", [
+                ("Magic", "uint32", 0, 4, null),
+                ("CPUType", "int32", 4, 4, null),
+                ("CPUSubType", "int32", 8, 4, null),
+                ("FileType", "uint32", 12, 4, null),
+                ("NumLoadCommands", "uint32", 16, 4, null),
+                ("SizeOfLoadCommands", "uint32", 20, 4, null),
+                ("Flags", "uint32", 24, 4, null),
+            ]),
+        ]);
+
+    private static FormatRule Macho64Rule() => CreateRule("Mach-O-64", "Mach-O 可执行文件 (64位)",
+        [([0xFE, 0xED, 0xFA, 0xCF], 0, 32), ([0xCF, 0xFA, 0xED, 0xFE], 0, 32)],
+        [
+            ("Mach-O Header (64-bit)", [
+                ("Magic", "uint32", 0, 4, null),
+                ("CPUType", "int32", 4, 4, null),
+                ("CPUSubType", "int32", 8, 4, null),
+                ("FileType", "uint32", 12, 4, null),
+                ("NumLoadCommands", "uint32", 16, 4, null),
+                ("SizeOfLoadCommands", "uint32", 20, 4, null),
+                ("Flags", "uint32", 24, 4, null),
+                ("Reserved", "uint32", 28, 4, null),
+            ]),
+        ]);
+
+    private static FormatRule AiffRule() => CreateRule("AIFF", "AIFF 音频文件结构",
+        [([0x46, 0x4F, 0x52, 0x4D], 0, 12)],
+        [
+            ("FORM Header", [
+                ("ChunkID", "ascii", 0, 4, null),
+                ("ChunkSize", "uint32", 4, 4, null),
+                ("Format", "ascii", 8, 4, null),
+            ]),
+            ("Common Chunk", [
+                ("ChunkID", "ascii", 12, 4, null),
+                ("ChunkSize", "uint32", 16, 4, null),
+                ("NumChannels", "uint16", 20, 2, null),
+                ("NumSampleFrames", "uint32", 22, 4, null),
+                ("SampleSize", "uint16", 26, 2, null),
+                ("SampleRate", "uint80", 28, 10, null),
+            ]),
+        ]);
+
+    private static FormatRule DebRule() => CreateRule("DEB", "Debian 软件包结构",
+        [([0x21, 0x3C, 0x61, 0x72, 0x63, 0x68, 0x3E], 0, 68)],
+        [
+            ("ar Archive Header", [
+                ("Magic", "ascii", 0, 8, null),
+            ]),
+            ("debian-binary Entry", [
+                ("FileName", "ascii", 8, 16, null),
+                ("FileModTime", "ascii", 24, 12, null),
+                ("OwnerID", "ascii", 36, 6, null),
+                ("GroupID", "ascii", 42, 6, null),
+                ("FileMode", "ascii", 48, 8, null),
+                ("FileSize", "ascii", 56, 10, null),
+                ("TrailingMagic", "ascii", 66, 2, null),
+            ]),
+            ("control.tar.gz Entry", [
+                ("FileName", "ascii", 68, 16, null),
+                ("FileModTime", "ascii", 84, 12, null),
+                ("OwnerID", "ascii", 96, 6, null),
+                ("GroupID", "ascii", 102, 6, null),
+                ("FileMode", "ascii", 108, 8, null),
+                ("FileSize", "ascii", 116, 10, null),
+                ("TrailingMagic", "ascii", 126, 2, null),
+            ]),
+        ]);
+
+    private static FormatRule Ole2Rule() => CreateRule("OLE2", "OLE2 复合文档 (DOC/XLS/PPT/MSI)",
+        [([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1], 0, 24)],
+        [
+            ("OLE2 Header", [
+                ("Magic", "bytes", 0, 8, null),
+                ("CLSID", "bytes", 8, 16, null),
+                ("MinorVersion", "uint16", 24, 2, null),
+                ("MajorVersion", "uint16", 26, 2, null),
+                ("ByteOrder", "uint16", 28, 2, null),
+                ("SectorShift", "uint16", 30, 2, null),
+                ("MiniSectorShift", "uint16", 32, 2, null),
+                ("NumDirectorySectors", "uint32", 40, 4, null),
+                ("NumFATs", "uint32", 44, 4, null),
+                ("FirstDirectorySector", "uint32", 48, 4, null),
+                ("MiniStreamCutoff", "uint32", 56, 4, null),
+                ("FirstMiniFATSector", "uint32", 60, 4, null),
+                ("NumMiniFATs", "uint32", 64, 4, null),
             ]),
         ]);
 }
