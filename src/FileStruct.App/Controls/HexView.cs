@@ -110,8 +110,8 @@ public class HexView : Control
     /// <summary>行数据源（供虚拟化 ItemsControl 使用）</summary>
     public HexRowList? RowList { get; private set; }
 
-    /// <summary>缓存的 ScrollViewer（用于快速获取可见行范围）</summary>
-    private ScrollViewer? _scrollViewer;
+    /// <summary>导航进行中标志：SetSelection 触发 OnSelectionChanged 时不立即更新高亮</summary>
+    private bool _navigating;
 
     #endregion
 
@@ -137,10 +137,6 @@ public class HexView : Control
             listBox.ContextMenuOpening += OnContextMenuOpening;
             listBox.ItemContainerGenerator.StatusChanged += (_, _) => UpdateRowHighlights();
 
-            // 缓存 ScrollViewer 用于快速可见行范围计算
-            if (_scrollViewer == null)
-                Loaded += (_, _) => _scrollViewer ??= FindVisualChild<ScrollViewer>(listBox);
-
             // 绑定右键菜单项（先移除再添加防重复）
             if (listBox.ContextMenu != null)
             {
@@ -161,7 +157,9 @@ public class HexView : Control
     {
         SelectionStart = Selection.HasSelection ? Math.Min(args.StartOffset, args.EndOffset) : -1;
         SelectionEnd = Selection.HasSelection ? Math.Max(args.StartOffset, args.EndOffset) : -1;
-        UpdateRowHighlights();
+        // 导航中跳过：NavigateTo 会在滚动+容器生成后用 InvokeAsync 统一刷新高亮
+        if (!_navigating)
+            UpdateRowHighlights();
     }
 
     private bool _isDragging;
@@ -207,8 +205,7 @@ public class HexView : Control
             return;
 
         // 仅遍历可见行范围（大文件数亿行，绝不能遍历所有）
-        // CanContentScroll=True 时 VerticalOffset/ViewportHeight 以行为单位
-        var sv = _scrollViewer ?? FindVisualChild<ScrollViewer>(listBox);
+        var sv = FindVisualChild<ScrollViewer>(listBox);
         if (sv == null) return;
         int firstVisible = (int)(sv.VerticalOffset);
         int viewportRows = Math.Max(1, (int)(sv.ViewportHeight));
@@ -403,23 +400,30 @@ public class HexView : Control
     {
         if (Buffer == null || RowList == null) return;
 
-        // 原子设置选中区间（只触发一次 SelectionChanged，替代 Clear+Begin+Extend 三次）
-        Selection.SetSelection(offset, length > 1 ? offset + length - 1 : offset);
-
-        // 居中显示
-        var listBox = GetTemplateChild("PART_ListBox") as ListBox;
-        var scrollViewer = FindVisualChild<ScrollViewer>(listBox);
-        if (scrollViewer != null)
+        _navigating = true;
+        try
         {
-            var rowIndex = (int)(offset / BytesPerRow);
-            // CanContentScroll=True 时 ViewportHeight 以行为单位
-            var viewportRows = Math.Max(1, (int)(scrollViewer.ViewportHeight));
-            var targetRow = Math.Max(0, rowIndex - viewportRows / 2);
-            scrollViewer.ScrollToVerticalOffset(targetRow);
+            // 原子设置选中区间（触发 OnSelectionChanged 但跳过 UpdateRowHighlights）
+            Selection.SetSelection(offset, length > 1 ? offset + length - 1 : offset);
+
+            // 居中显示
+            var listBox = GetTemplateChild("PART_ListBox") as ListBox;
+            var sv = FindVisualChild<ScrollViewer>(listBox);
+            if (sv != null)
+            {
+                var rowIndex = (int)(offset / BytesPerRow);
+                var viewportRows = Math.Max(1, (int)(sv.ViewportHeight));
+                var targetRow = Math.Max(0, rowIndex - viewportRows / 2);
+                sv.ScrollToVerticalOffset(targetRow);
+            }
+        }
+        finally
+        {
+            _navigating = false;
         }
 
-        // 滚动后再次刷新高亮（滚动前的高亮更新作用在旧可见行上）
-        UpdateRowHighlights();
+        // 延迟到 Loaded 优先级：等 WPF 完成滚动+容器重新生成后再刷新高亮
+        Dispatcher.InvokeAsync(UpdateRowHighlights, System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     private static T? FindVisualChild<T>(System.Windows.DependencyObject? parent) where T : System.Windows.DependencyObject
