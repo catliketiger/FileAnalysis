@@ -8,6 +8,7 @@ using FileStruct.Services.FileManagement;
 using FileStruct.Services.ProjectManagement;
 using FileStruct.Services.StructureRecognition;
 using FileStruct.Services.EditService;
+using FileStruct.Services.RuleEngine;
 using FileStruct.App.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -45,7 +46,20 @@ public partial class App : Application
         services.AddSingleton<IProjectService, ProjectService>();
         services.AddSingleton<IConfigService, ConfigService>();
 
-        // V1.0 识别引擎
+        // 加载内置规则
+        var ruleLoader = new BuiltinRuleLoader();
+        var builtinRules = ruleLoader.LoadAll();
+        logService.Info($"已加载 {builtinRules.Count} 个内置格式规则");
+
+        // V1.0 规则引擎 + 识别引擎
+        services.AddSingleton<IRuleEngine, RuleEngine>(sp =>
+        {
+            var engine = new RuleEngine(sp.GetRequiredService<ILogService>());
+            foreach (var rule in builtinRules)
+                engine.AddBuiltinRule(rule);
+            return engine;
+        });
+
         services.AddSingleton<ISignatureMatcher, SignatureMatcher>();
         services.AddSingleton<IHeuristicEngine, HeuristicEngine>();
         services.AddSingleton<IConfidenceScorer, ConfidenceScorer>();

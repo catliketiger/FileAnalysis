@@ -8,17 +8,20 @@ public class StructureRecognizer : IStructureRecognizer
     private readonly ISignatureMatcher _signatureMatcher;
     private readonly IHeuristicEngine _heuristicEngine;
     private readonly IConfidenceScorer _confidenceScorer;
+    private readonly IRuleEngine _ruleEngine;
     private readonly ILogService _logger;
 
     public StructureRecognizer(
         ISignatureMatcher signatureMatcher,
         IHeuristicEngine heuristicEngine,
         IConfidenceScorer confidenceScorer,
+        IRuleEngine ruleEngine,
         ILogService logger)
     {
         _signatureMatcher = signatureMatcher;
         _heuristicEngine = heuristicEngine;
         _confidenceScorer = confidenceScorer;
+        _ruleEngine = ruleEngine;
         _logger = logger;
     }
 
@@ -69,53 +72,89 @@ public class StructureRecognizer : IStructureRecognizer
                 Description = bestMatch.Definition.Description,
             };
 
-            // 添加魔数字段
-            var magicLen = bestMatch.Definition.MagicBytes.Length;
-            var magicField = new StructureNode
+            // 尝试加载预置结构定义
+            var formatName = bestMatch.Definition.FormatName;
+            var matchOffset = bestMatch.MatchOffset;
+            var matchedRule = _ruleEngine.GetAllRules()
+                .FirstOrDefault(r => string.Equals(r.Format, formatName, StringComparison.OrdinalIgnoreCase));
+
+            if (matchedRule != null && matchedRule.Structures.Count > 0)
             {
-                Name = "Magic",
-                Offset = bestMatch.MatchOffset,
-                Length = magicLen,
-                DataType = FieldDataType.Bytes,
-                Confidence = 1.0,
-                Source = StructureNodeSource.AutoDetected,
-                Description = $"魔数: {BitConverter.ToString(bestMatch.Definition.MagicBytes)}",
-            };
-            formatNode.AddChild(magicField);
+                // 使用预置结构构建字段节点
+                foreach (var structDef in matchedRule.Structures)
+                {
+                    var structNode = new StructureNode
+                    {
+                        Name = structDef.Name,
+                        Offset = 0,
+                        Length = buffer.Length,
+                        DataType = FieldDataType.Struct,
+                        Confidence = bestMatch.Score,
+                        Source = StructureNodeSource.AutoDetected,
+                    };
+
+                    foreach (var fieldDef in structDef.Fields)
+                    {
+                        var fieldNode = new StructureNode
+                        {
+                            Name = fieldDef.Name,
+                            Offset = fieldDef.Offset,
+                            Length = fieldDef.Length ?? GuessFieldLength(fieldDef.Type),
+                            DataType = ParseFieldType(fieldDef.Type),
+                            Endianness = fieldDef.Endianness == "BigEndian"
+                                ? FieldEndianness.BigEndian
+                                : FieldEndianness.LittleEndian,
+                            Confidence = 0.9,
+                            Source = StructureNodeSource.AutoDetected,
+                        };
+
+                        // 跳过位置未知的字段（负偏移表示从尾部算，暂不支持）
+                        if (fieldNode.Offset >= 0 && fieldNode.Offset + fieldNode.Length <= buffer.Length)
+                            structNode.AddChild(fieldNode);
+                    }
+
+                    if (structNode.Children.Count > 0)
+                        formatNode.AddChild(structNode);
+                }
+            }
+
+            // 如果没有预置结构或预置结构为空，至少添加魔数字段
+            if (formatNode.Children.Count == 0)
+            {
+                var magicLen = bestMatch.Definition.MagicBytes.Length;
+                formatNode.AddChild(new StructureNode
+                {
+                    Name = "Magic",
+                    Offset = matchOffset,
+                    Length = magicLen,
+                    DataType = FieldDataType.Bytes,
+                    Confidence = 1.0,
+                    Source = StructureNodeSource.AutoDetected,
+                    Description = $"魔数: {BitConverter.ToString(bestMatch.Definition.MagicBytes)}",
+                });
+            }
 
             root.AddChild(formatNode);
         }
         else
         {
             _logger.Info("签名匹配无结果，进入启发式推断");
+            // Stage 2: 启发式推断（仅当签名未匹配时）
+            progress?.Report(new RecognitionProgress(50, "正在进行启发式推断..."));
+            var heuristicResult = await _heuristicEngine.InferAsync(buffer, progress, ct);
+            foreach (var child in heuristicResult.Children)
+                root.AddChild(child);
         }
 
         ct.ThrowIfCancellationRequested();
 
-        // Stage 2: 启发式推断
-        _logger.Debug("Stage 2: 启发式推断");
-        progress?.Report(new RecognitionProgress(50, "正在进行启发式推断..."));
-
-        var heuristicResult = await _heuristicEngine.InferAsync(buffer, progress, ct);
-
-        // 将启发式结果合并到根节点
-        foreach (var child in heuristicResult.Children)
-        {
-            root.AddChild(child);
-        }
-
         // Stage 3: 置信度计算
-        _logger.Debug("Stage 3: 置信度传播");
         progress?.Report(new RecognitionProgress(90, "正在计算置信度..."));
-
         foreach (var match in signatureMatches)
         {
-            // 为匹配到的签名节点设置置信度
             var formatNode = root.Children.FirstOrDefault(c => c.Name == match.Definition.FormatName);
             if (formatNode != null)
-            {
                 _confidenceScorer.Calculate(formatNode, match);
-            }
         }
         _confidenceScorer.Propagate(root);
 
@@ -125,8 +164,32 @@ public class StructureRecognizer : IStructureRecognizer
         return root;
     }
 
-    private static int CountNodes(StructureNode node)
+    private static int GuessFieldLength(string type) => type.ToLowerInvariant() switch
     {
-        return 1 + node.Children.Sum(CountNodes);
-    }
+        "uint8" or "int8" or "ascii" => 1,
+        "uint16" or "int16" => 2,
+        "uint32" or "int32" or "float" => 4,
+        "uint64" or "int64" or "double" => 8,
+        _ => 4,
+    };
+
+    private static FieldDataType ParseFieldType(string type) => type.ToLowerInvariant() switch
+    {
+        "uint8" => FieldDataType.UInt8,
+        "int8" => FieldDataType.Int8,
+        "uint16" => FieldDataType.UInt16LE,
+        "int16" => FieldDataType.Int16LE,
+        "uint32" => FieldDataType.UInt32LE,
+        "int32" => FieldDataType.Int32LE,
+        "uint64" => FieldDataType.UInt64LE,
+        "int64" => FieldDataType.Int64LE,
+        "float" => FieldDataType.FloatLE,
+        "double" => FieldDataType.DoubleLE,
+        "ascii" => FieldDataType.ASCII,
+        "utf8" => FieldDataType.UTF8,
+        "bytes" => FieldDataType.Bytes,
+        _ => FieldDataType.Bytes,
+    };
+
+    private static int CountNodes(StructureNode node) => 1 + node.Children.Sum(CountNodes);
 }

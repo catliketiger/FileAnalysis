@@ -1,0 +1,32 @@
+{
+  "ruleVersion": "1.0",
+  "format": "ZIP",
+  "description": "ZIP 压缩包文件结构（首个本地文件头为定长，后续为变长数据）",
+  "signatures": [
+    {
+      "name": "ZIP Local File Header",
+      "pattern": [80, 75, 3, 4],
+      "offset": 0,
+      "minFileSize": 30
+    }
+  ],
+  "structures": [
+    {
+      "name": "ZIP Local File Header",
+      "type": "struct",
+      "fields": [
+        { "name": "LocalFileHeaderSignature", "type": "uint32", "offset": 0, "length": 4 },
+        { "name": "VersionNeededToExtract", "type": "uint16", "offset": 4, "length": 2 },
+        { "name": "GeneralPurposeBitFlag", "type": "uint16", "offset": 6, "length": 2 },
+        { "name": "CompressionMethod", "type": "uint16", "offset": 8, "length": 2 },
+        { "name": "LastModFileTime", "type": "uint16", "offset": 10, "length": 2 },
+        { "name": "LastModFileDate", "type": "uint16", "offset": 12, "length": 2 },
+        { "name": "CRC32", "type": "uint32", "offset": 14, "length": 4 },
+        { "name": "CompressedSize", "type": "uint32", "offset": 18, "length": 4 },
+        { "name": "UncompressedSize", "type": "uint32", "offset": 22, "length": 4 },
+        { "name": "FileNameLength", "type": "uint16", "offset": 26, "length": 2 },
+        { "name": "ExtraFieldLength", "type": "uint16", "offset": 28, "length": 2 }
+      ]
+    }
+  ]
+}

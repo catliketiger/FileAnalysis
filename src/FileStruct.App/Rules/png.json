@@ -1,0 +1,46 @@
+{
+  "ruleVersion": "1.0",
+  "format": "PNG",
+  "description": "PNG 图片文件结构（仅定长头部，后续为变长数据块）",
+  "signatures": [
+    {
+      "name": "PNG Magic",
+      "pattern": [137, 80, 78, 71, 13, 10, 26, 10],
+      "offset": 0,
+      "minFileSize": 29
+    }
+  ],
+  "structures": [
+    {
+      "name": "PNG Signature",
+      "type": "struct",
+      "fields": [
+        { "name": "Signature", "type": "bytes", "offset": 0, "length": 8 }
+      ]
+    },
+    {
+      "name": "IHDR Chunk (First Header)",
+      "type": "struct",
+      "fields": [
+        { "name": "DataLength", "type": "uint32", "offset": 8, "length": 4 },
+        { "name": "ChunkType", "type": "ascii", "offset": 12, "length": 4 },
+        { "name": "Width", "type": "uint32", "offset": 16, "length": 4 },
+        { "name": "Height", "type": "uint32", "offset": 20, "length": 4 },
+        { "name": "BitDepth", "type": "uint8", "offset": 24, "length": 1 },
+        { "name": "ColorType", "type": "uint8", "offset": 25, "length": 1 },
+        { "name": "Compression", "type": "uint8", "offset": 26, "length": 1 },
+        { "name": "Filter", "type": "uint8", "offset": 27, "length": 1 },
+        { "name": "Interlace", "type": "uint8", "offset": 28, "length": 1 }
+      ]
+    },
+    {
+      "name": "IEND Chunk (Trailer)",
+      "type": "struct",
+      "fields": [
+        { "name": "DataLength", "type": "uint32", "offset": -12, "length": 4 },
+        { "name": "ChunkType", "type": "ascii", "offset": -8, "length": 4 },
+        { "name": "CRC32", "type": "uint32", "offset": -4, "length": 4 }
+      ]
+    }
+  ]
+}

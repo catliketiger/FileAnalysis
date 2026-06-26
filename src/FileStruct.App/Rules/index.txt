@@ -1,0 +1,10 @@
+[
+  "bmp.json",
+  "gif.json",
+  "gzip.json",
+  "png.json",
+  "riff.json",
+  "pe.json",
+  "elf.json",
+  "zip.json"
+]

@@ -456,6 +456,14 @@ public partial class MainViewModel : ObservableObject
     {
         if (_buffer == null) return;
 
+        // 纯文本文件跳过结构识别
+        if (HexEditor.FileType?.IsText == true)
+        {
+            StatusText = "纯文本文件无需结构识别";
+            StructureTree.Clear();
+            return;
+        }
+
         try
         {
             IsRecognizing = true;

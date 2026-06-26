@@ -128,6 +128,13 @@ public class RuleEngine : IRuleEngine
         }
     }
 
+    /// <summary>直接添加规则（内置预置规则用，跳过校验和冲突检测）</summary>
+    public void AddBuiltinRule(FormatRule rule)
+    {
+        _rules.Add(rule);
+        _logger.Info($"内置规则已加载: {rule.Format}");
+    }
+
     public void RemoveRule(FormatRule rule)
     {
         _rules.Remove(rule);
