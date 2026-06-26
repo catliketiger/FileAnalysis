@@ -40,6 +40,10 @@ public static class BuiltinRuleProvider
         AiffRule(),
         DebRule(),
         Ole2Rule(),
+        RarRule(),
+        PsdRule(),
+        PdfRule(),
+        OggRule(),
     ];
 
     private static FormatRule CreateRule(string format, string desc,
@@ -611,5 +615,58 @@ public static class BuiltinRuleProvider
                 ("FirstMiniFATSector", "uint32", -1, 4, null),
                 ("NumMiniFATs", "uint32", -1, 4, null),
             ], true),
+        ]);
+
+    private static FormatRule RarRule() => CreateRule("RAR", "RAR 压缩包文件结构",
+        [([0x52, 0x61, 0x72, 0x21, 0x1A, 0x07], 0, 13)],
+        [
+            ("RAR Header", [
+                ("Magic", "bytes", 0, 7, null),
+                ("HeaderCRC", "uint16", 7, 2, null),
+                ("HeaderType", "uint8", 9, 1, null),
+                ("HeaderFlags", "uint16", 10, 2, null),
+                ("ExtraSize", "uint16", 12, 2, null),
+            ], false),
+        ]);
+
+    private static FormatRule PsdRule() => CreateRule("PSD", "PSD 图片文件结构",
+        [([0x38, 0x42, 0x50, 0x53], 0, 26)],
+        [
+            ("PSD Header", [
+                ("Signature", "ascii", 0, 4, null),
+                ("Version", "uint16", 4, 2, null),
+                ("Reserved", "bytes", 6, 6, null),
+                ("Channels", "uint16", 12, 2, null),
+                ("Rows", "uint32", 14, 4, null),
+                ("Columns", "uint32", 18, 4, null),
+                ("BitDepth", "uint16", 22, 2, null),
+                ("Mode", "uint16", 24, 2, null),
+            ], false),
+        ]);
+
+    private static FormatRule PdfRule() => CreateRule("PDF", "PDF 文档文件结构",
+        [([0x25, 0x50, 0x44, 0x46], 0, 8)],
+        [
+            ("PDF Header", [
+                ("Magic", "ascii", 0, 5, null),
+                ("MajorVersion", "uint8", 5, 1, null),
+                ("DotSeparator", "uint8", 6, 1, null),
+                ("MinorVersion", "uint8", 7, 1, null),
+            ], false),
+        ]);
+
+    private static FormatRule OggRule() => CreateRule("OGG", "OGG 音频/视频容器格式",
+        [([0x4F, 0x67, 0x67, 0x53], 0, 28)],
+        [
+            ("OGG Page Header", [
+                ("CapturePattern", "ascii", 0, 4, null),
+                ("Version", "uint8", 4, 1, null),
+                ("HeaderType", "uint8", 5, 1, null),
+                ("GranulePosition", "uint64", 6, 8, null),
+                ("BitstreamSerial", "uint32", 14, 4, null),
+                ("PageSeqNo", "uint32", 18, 4, null),
+                ("PageChecksum", "uint32", 22, 4, null),
+                ("PageSegments", "uint8", 26, 1, null),
+            ], false),
         ]);
 }
