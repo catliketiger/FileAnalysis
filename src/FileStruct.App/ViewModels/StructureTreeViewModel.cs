@@ -31,30 +31,36 @@ public partial class StructureTreeViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 搜索树节点（按名称匹配，不区分大小写）
+    /// 搜索树节点（按名称匹配，不区分大小写），选中并展开找到的项
     /// </summary>
     public bool SearchTree(string searchText)
     {
         if (RootNode == null || string.IsNullOrWhiteSpace(searchText)) return false;
 
-        var found = FindByName(RootNode, searchText);
+        // 在 TreeItemViewModel 树中搜索（确保能选中 UI 中的对应项）
+        var found = FindTreeItemByName(RootItems, searchText);
         if (found != null)
         {
-            SelectedNode = found;
-            ExpandPathToNode(found);
+            ClearAllSelection(RootItems);
+            ExpandPathToTreeItem(found);
+            found.IsSelected = true;
+            SelectedNode = found.Node;
             return true;
         }
         return false;
     }
 
-    private static StructureNode? FindByName(StructureNode node, string searchText)
+    /// <summary>
+    /// 遍历 TreeItemViewModel 树按名称匹配
+    /// </summary>
+    private static TreeItemViewModel? FindTreeItemByName(IEnumerable<TreeItemViewModel> items, string searchText)
     {
-        if (node.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            return node;
-
-        foreach (var child in node.Children)
+        foreach (var item in items)
         {
-            var found = FindByName(child, searchText);
+            if (item.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                return item;
+
+            var found = FindTreeItemByName(item.Children, searchText);
             if (found != null) return found;
         }
         return null;
@@ -79,18 +85,51 @@ public partial class StructureTreeViewModel : ObservableObject
         var node = RootNode.FindByOffset(offset);
         if (node != null && node != RootNode)
         {
+            ClearAllSelection(RootItems);
+            var found = FindTreeItemByNode(RootItems, node);
+            if (found != null)
+            {
+                ExpandPathToTreeItem(found);
+                found.IsSelected = true;
+            }
             SelectedNode = node;
-            ExpandPathToNode(node);
         }
         return node;
     }
 
     /// <summary>
-    /// 展开到目标节点的路径
+    /// 遍历 TreeItemViewModel 树匹配 StructureNode
     /// </summary>
-    private static void ExpandPathToNode(StructureNode node)
+    private static TreeItemViewModel? FindTreeItemByNode(IEnumerable<TreeItemViewModel> items, StructureNode targetNode)
     {
-        var current = node;
+        foreach (var item in items)
+        {
+            if (item.Node == targetNode)
+                return item;
+            var found = FindTreeItemByNode(item.Children, targetNode);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// 清除所有 TreeItem 的选中状态
+    /// </summary>
+    public static void ClearAllSelection(IEnumerable<TreeItemViewModel> items)
+    {
+        foreach (var item in items)
+        {
+            item.IsSelected = false;
+            ClearAllSelection(item.Children);
+        }
+    }
+
+    /// <summary>
+    /// 展开到目标项的路径
+    /// </summary>
+    private static void ExpandPathToTreeItem(TreeItemViewModel item)
+    {
+        var current = item.Node;
         while (current != null)
         {
             current.IsExpanded = true;
@@ -115,6 +154,7 @@ public partial class StructureTreeViewModel : ObservableObject
 public class TreeItemViewModel : ObservableObject
 {
     private readonly StructureNode _node;
+    private bool _isSelected;
 
     public TreeItemViewModel(StructureNode node)
     {
@@ -138,6 +178,11 @@ public class TreeItemViewModel : ObservableObject
     {
         get => _node.IsExpanded;
         set => _node.IsExpanded = value;
+    }
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set => SetProperty(ref _isSelected, value);
     }
     public StructureNode Node => _node;
 

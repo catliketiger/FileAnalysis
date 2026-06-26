@@ -25,14 +25,20 @@
                   ItemsSource="{Binding StructureTree.RootItems}"
                   BorderThickness="1"
                   FontSize="12">
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                </Style>
+            </TreeView.ItemContainerStyle>
             <TreeView.Resources>
                 <HierarchicalDataTemplate DataType="{x:Type local:TreeItemViewModel}"
                                           ItemsSource="{Binding Children}">
                     <StackPanel Orientation="Horizontal" ToolTip="{Binding Path=Node.Description}">
                         <TextBlock Text="{Binding Name}" FontWeight="Bold" Margin="0,0,4,0"/>
-                        <TextBlock Text="{Binding Offset, StringFormat={}0x{0:X}}" Foreground="Gray" Margin="0,0,4,0"/>
-                        <TextBlock Text="{Binding Length, StringFormat={}[{0}]}" Foreground="DarkGray"/>
-                        <TextBlock Text="{Binding DataType}" Foreground="Blue" Margin="4,0,0,0"/>
+                        <TextBlock Text="{Binding Offset, StringFormat={}0x{0:X}}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,4,0"/>
+                        <TextBlock Text="{Binding Length, StringFormat={}[{0}]}" Foreground="{DynamicResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding DataType}" Foreground="{DynamicResource AccentBrush}" Margin="4,0,0,0"/>
                     </StackPanel>
                 </HierarchicalDataTemplate>
             </TreeView.Resources>
