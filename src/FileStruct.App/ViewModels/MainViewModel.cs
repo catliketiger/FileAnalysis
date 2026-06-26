@@ -504,6 +504,14 @@ public partial class MainViewModel : ObservableObject
         JumpToSearchResult();
     }
 
+    [RelayCommand]
+    private void PreviousSearchResult()
+    {
+        if (_searchResults.Count == 0) return;
+        _searchResultIndex = (_searchResultIndex - 1 + _searchResults.Count) % _searchResults.Count;
+        JumpToSearchResult();
+    }
+
     private void JumpToSearchResult()
     {
         if (_searchResultIndex < 0 || _searchResultIndex >= _searchResults.Count) return;

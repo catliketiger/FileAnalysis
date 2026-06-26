@@ -88,6 +88,7 @@
                 </TextBox.InputBindings>
             </TextBox>
             <Button Content="搜" Command="{Binding SearchBytesCommand}" VerticalAlignment="Center"/>
+            <Button Content="◀" Command="{Binding PreviousSearchResultCommand}" VerticalAlignment="Center" Width="22"/>
             <Button Content="▶" Command="{Binding NextSearchResultCommand}" VerticalAlignment="Center" Width="22"/>
             <TextBlock Text="{Binding SearchResultText}" VerticalAlignment="Center" Margin="4,0" FontSize="11" Foreground="Gray"/>
         </ToolBar>

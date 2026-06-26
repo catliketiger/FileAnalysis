@@ -208,9 +208,10 @@ public class HexView : Control
 
         // 仅遍历可见行范围（大文件数亿行，绝不能遍历所有）
         // CanContentScroll=True 时 VerticalOffset/ViewportHeight 以行为单位
-        if (_scrollViewer == null) return;
-        int firstVisible = (int)(_scrollViewer.VerticalOffset);
-        int viewportRows = Math.Max(1, (int)(_scrollViewer.ViewportHeight));
+        var sv = _scrollViewer ?? FindVisualChild<ScrollViewer>(listBox);
+        if (sv == null) return;
+        int firstVisible = (int)(sv.VerticalOffset);
+        int viewportRows = Math.Max(1, (int)(sv.ViewportHeight));
         int lastVisible = firstVisible + viewportRows + 1;
         for (int i = firstVisible; i <= lastVisible; i++)
         {
