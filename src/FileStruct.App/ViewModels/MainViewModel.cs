@@ -196,23 +196,29 @@ public partial class MainViewModel : ObservableObject
         try
         {
             StatusText = "正在打开项目...";
+
+            // 分步诊断
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            _logger.Debug("Step 1: 开始反序列化项目文件");
             var project = await _projectService.OpenAsync(dialog.FileName);
+            _logger.Debug($"Step 2: 反序列化完成 ({sw.ElapsedMilliseconds}ms)，检查源文件");
 
             // 检查源文件是否存在
             if (!string.IsNullOrEmpty(project.SourceFile.OriginalPath) &&
                 File.Exists(project.SourceFile.OriginalPath))
             {
-                // 检查哈希
+                _logger.Debug($"Step 3: 源文件存在，检查哈希");
                 if (!_projectService.VerifySourceFileHash(project, project.SourceFile.OriginalPath))
                 {
                     StatusText = "警告：源文件已被修改";
                 }
 
+                _logger.Debug($"Step 4: 加载源文件");
                 _buffer?.Dispose();
                 _buffer = await _fileService.LoadFileAsync(project.SourceFile.OriginalPath);
                 HexEditor.Buffer = _buffer;
 
-                // 恢复视图状态
+                _logger.Debug($"Step 5: 恢复视图状态");
                 if (project.ViewState != null)
                 {
                     ActiveView = project.ViewState.ActiveView;
@@ -220,7 +226,7 @@ public partial class MainViewModel : ObservableObject
                     HexEditor.ByteGroupSize = project.ViewState.ByteGroupSize;
                 }
 
-                // 恢复结构树
+                _logger.Debug($"Step 6: 恢复结构树");
                 if (project.StructureRoot != null)
                 {
                     try
@@ -235,6 +241,7 @@ public partial class MainViewModel : ObservableObject
                     }
                 }
 
+                _logger.Debug($"Step 7: 完成 ({sw.ElapsedMilliseconds}ms)");
                 IsFileLoaded = true;
                 WindowTitle = $"FileStruct - {project.SourceFile.FileName}";
                 StatusText = "项目已打开";

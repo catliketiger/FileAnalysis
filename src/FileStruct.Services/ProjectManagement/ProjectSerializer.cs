@@ -31,10 +31,19 @@ public class ProjectSerializer
     /// </summary>
     public ProjectFile Deserialize(string json)
     {
-        var project = JsonSerializer.Deserialize<ProjectFile>(json, JsonOptions);
-        if (project == null)
-            throw new InvalidDataException("项目文件解析失败：反序列化返回 null");
-        return project;
+        try
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var project = JsonSerializer.Deserialize<ProjectFile>(json, JsonOptions);
+            System.Diagnostics.Debug.WriteLine($"[ProjectSerializer] 反序列化耗时: {sw.ElapsedMilliseconds}ms");
+            if (project == null)
+                throw new InvalidDataException("项目文件解析失败：反序列化返回 null");
+            return project;
+        }
+        catch (System.Text.Json.JsonException ex)
+        {
+            throw new InvalidDataException($"项目文件 JSON 解析错误: {ex.Message}", ex);
+        }
     }
 
     /// <summary>
