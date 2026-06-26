@@ -71,6 +71,9 @@ public partial class MainViewModel : ObservableObject
     private BookmarkViewModel _bookmarkList = new();
 
     [ObservableProperty]
+    private FileMetaViewModel _fileMeta = new();
+
+    [ObservableProperty]
     private bool _isRecognizing;
 
     [ObservableProperty]
@@ -98,6 +101,9 @@ public partial class MainViewModel : ObservableObject
             // 检测类型
             var fileType = _fileService.DetectFileType(_buffer);
             FileInfoText = $"{_buffer.FileName} | {FormatFileSize(_buffer.Length)} | {fileType.DisplayName}";
+
+            // 更新文件元数据
+            FileMeta.Update(_buffer.FilePath, fileType.DisplayName, _buffer.Length);
 
             // 分发给子 ViewModel
             HexEditor.Buffer = _buffer;
@@ -308,6 +314,7 @@ public partial class MainViewModel : ObservableObject
 
         IsFileLoaded = false;
         SelectedTabIndex = 0;
+        FileMeta.Clear();
         WindowTitle = "FileStruct - 二进制文件结构化分析工具";
         FileInfoText = "";
         StatusText = "文件已关闭";

@@ -102,17 +102,40 @@
                 <ColumnDefinition Width="250" MinWidth="180"/>
             </Grid.ColumnDefinitions>
 
-            <!-- 左侧面板：结构树 -->
+            <!-- 左侧面板：结构树 + 文件元数据 -->
             <Border Grid.Column="0" BorderBrush="#DDD" BorderThickness="1" Margin="0,0,4,0">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="*" MinHeight="120"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto" MinHeight="80"/>
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" Background="#F5F5F5" Padding="8,4">
                         <TextBlock Text="结构树" FontWeight="Bold"/>
                     </Border>
-                    <views:StructureTreeView Grid.Row="1" x:Name="StructTreeView"/>
+                    <views:StructureTreeView Grid.Row="0" x:Name="StructTreeView"/>
+
+                    <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch"
+                                  ShowsPreview="False" Background="Transparent"
+                                  ResizeBehavior="PreviousAndNext"/>
+
+                    <Border Grid.Row="2" Background="#FAFAFA" Padding="6,4"
+                            DataContext="{Binding FileMeta}">
+                        <StackPanel TextBlock.FontSize="11">
+                            <TextBlock Text="文件信息" FontWeight="Bold" Margin="0,0,0,4"
+                                       Visibility="{Binding HasFile, Converter={StaticResource BoolToVisibility}}"/>
+                            <StackPanel Visibility="{Binding HasFile, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock><Run FontWeight="SemiBold">格式: </Run><Run Text="{Binding Format}"/></TextBlock>
+                                <TextBlock TextTrimming="CharacterEllipsis" ToolTip="{Binding FilePath}">
+                                    <Run FontWeight="SemiBold">路径: </Run><Run Text="{Binding FilePath}"/></TextBlock>
+                                <TextBlock><Run FontWeight="SemiBold">大小: </Run><Run Text="{Binding FileSize}"/></TextBlock>
+                                <TextBlock><Run FontWeight="SemiBold">创建: </Run><Run Text="{Binding Created}"/></TextBlock>
+                                <TextBlock><Run FontWeight="SemiBold">修改: </Run><Run Text="{Binding Modified}"/></TextBlock>
+                            </StackPanel>
+                            <TextBlock Text="无文件打开" Foreground="Gray"
+                                       Visibility="{Binding HasFile, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
+                        </StackPanel>
+                    </Border>
                 </Grid>
             </Border>
 
