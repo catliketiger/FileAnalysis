@@ -102,10 +102,11 @@ User opens file → MainViewModel.OpenFileCommand
 From `.spec/开发规范.md`:
 
 1. **TDD-first**: Write unit/integration tests before core logic.
-2. **Plan before code**: For large changes, write a plan doc first, get confirmation.
+2. **Plan with user**: For large/complex changes, plan first — interact with the user to clarify requirements and eliminate ambiguity before generating code.
 3. **Git before edit**: Commit before modifying files for rollback.
 4. **ASCII Art for UI**: Use ASCII art diagrams for UI mockups.
 5. **DEBUG switch**: Ship in DEBUG mode first (Serilog file logging), switch to Release after tests pass.
+6. **Version audit**: After major version commits, trigger a version audit to verify no required features were missed.
 
 ## Version Roadmap
 
