@@ -160,6 +160,7 @@ public partial class MainViewModel : ObservableObject
                     OriginalPath = _buffer.FilePath,
                     FileName = _buffer.FileName,
                     FileSize = _buffer.Length,
+                    DetectedType = HexEditor.FileType,
                 },
                 ViewState = new ViewState
                 {
