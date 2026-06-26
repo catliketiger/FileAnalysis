@@ -509,8 +509,9 @@ public partial class MainViewModel : ObservableObject
         if (_searchResultIndex < 0 || _searchResultIndex >= _searchResults.Count) return;
         var offset = _searchResults[_searchResultIndex];
         var length = _searchPatternLength > 0 ? _searchPatternLength : 1;
-        HexEditor.NavigateToOffset = offset;
+        // 先设长度再设偏移，确保 HexView 导航时长度值已更新
         HexEditor.NavigateToLength = length;
+        HexEditor.NavigateToOffset = offset;
         SearchResultText = $"结果 {_searchResultIndex + 1}/{_searchResults.Count} @ 0x{offset:X}";
         StatusText = SearchResultText;
     }

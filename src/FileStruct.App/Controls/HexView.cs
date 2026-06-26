@@ -391,7 +391,13 @@ public class HexView : Control
     private static void OnNavigateToOffsetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is HexView view && e.NewValue is long offset && offset >= 0)
-            view.NavigateTo(offset, view.NavigateToLength);
+        {
+            // 延迟到绑定优先级后执行，确保 NavigateToLength 已更新
+            var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+            dispatcher.InvokeAsync(
+                () => view.NavigateTo(offset, view.NavigateToLength),
+                System.Windows.Threading.DispatcherPriority.Background);
+        }
     }
 
     /// <summary>
