@@ -146,7 +146,7 @@ public class FileTypeDetector : IFileTypeDetector
         [".mpg"] = (FileCategory.Video, "MPEG 视频", "video/mpeg"),
         [".mpeg"] = (FileCategory.Video, "MPEG 视频", "video/mpeg"),
         [".3gp"] = (FileCategory.Video, "3GP 视频", "video/3gpp"),
-        // [".ts"] 已归入 TypeScript（文字类）
+        // [".ts"] 通过综合分析判断: TypeScript 或 MPEG-TS 视频
 
         // ═══ 文档 ═══
         [".pdf"] = (FileCategory.Document, "PDF 文档", "application/pdf"),
@@ -320,6 +320,12 @@ public class FileTypeDetector : IFileTypeDetector
         // 其次基于扩展名判断
         var extResult = DetectByExtension(filePath);
 
+        // .ts 文件：区分 TypeScript(文本) 和 MPEG-TS(视频)
+        if (string.Equals(extResult.Extension, ".ts", StringComparison.OrdinalIgnoreCase))
+        {
+            return DetectTsFile(headerBytes);
+        }
+
         // 如果扩展名判断为文本类型，进一步确认（没有魔数匹配到就按扩展名走）
         if (extResult.IsText)
         {
@@ -334,6 +340,30 @@ public class FileTypeDetector : IFileTypeDetector
             return headerResult;
 
         return extResult;
+    }
+
+    /// <summary>综合分析判断 .ts 文件是 TypeScript 还是 MPEG-TS 视频</summary>
+    private static FileTypeInfo DetectTsFile(byte[] header)
+    {
+        // MPEG-TS 特征：首字节为 0x47，且在 188 字节倍数位置也有 0x47
+        if (header.Length >= 564 && header[0] == 0x47)
+        {
+            var isMpegTs = true;
+            for (int pos = 188; pos < header.Length && pos < 752; pos += 188)
+            {
+                if (header[pos] != 0x47)
+                {
+                    isMpegTs = false;
+                    break;
+                }
+            }
+            if (isMpegTs)
+                return new FileTypeInfo(FileCategory.Video, ".ts", "MPEG-TS 视频流", false, null, "video/mp2t");
+        }
+
+        // 默认作为 TypeScript 文本
+        var encodingName = DetectTextEncodingName(header);
+        return new FileTypeInfo(FileCategory.Text, ".ts", "TypeScript 文件", true, encodingName, "application/typescript");
     }
 
     /// <summary>

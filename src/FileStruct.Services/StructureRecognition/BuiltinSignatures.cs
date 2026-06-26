@@ -31,6 +31,8 @@ public static class BuiltinSignatures
             description: "AVI 视频"), // "AVI " at offset 8 in RIFF header
         new("MKV", [0x1A, 0x45, 0xDF, 0xA3], description: "MKV/WebM 视频"),
         new("FLV", [0x46, 0x4C, 0x56], description: "FLV 视频"),
+        new("MPEG-TS", [0x47, 0x40, 0x00, 0x10], description: "MPEG-TS 传输流"),
+        new("MPEG-TS", [0x47, 0x00, 0x00, 0x00], description: "MPEG-TS 传输流"),
         new("MP4", [0x66, 0x74, 0x79, 0x70], magicOffset: 4,
             description: "MP4/MOV 视频"), // "ftyp" box at offset 4
 

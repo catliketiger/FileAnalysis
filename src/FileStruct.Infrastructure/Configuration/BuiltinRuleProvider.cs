@@ -29,6 +29,7 @@ public static class BuiltinRuleProvider
         TiffBeRule(),
         IcoRule(),
         SqliteRule(),
+        TsRule(),
         IsoRule(),
         RtfRule(),
         WoffRule(),
@@ -422,6 +423,16 @@ public static class BuiltinRuleProvider
                 ("AppID", "uint32", 68, 4, null),
                 ("VersionValidFor", "uint32", 92, 4, null),
                 ("SqliteVersion", "uint32", 96, 4, null),
+            ]),
+        ]);
+
+    private static FormatRule TsRule() => CreateRule("MPEG-TS", "MPEG-TS 传输流文件结构",
+        [([0x47, 0x40, 0x00, 0x10], 0, 188), ([0x47, 0x00, 0x00, 0x00], 0, 188)],
+        [
+            ("TS Packet Header", [
+                ("SyncByte", "uint8", 0, 1, null),
+                ("PID_High", "uint16", 1, 2, null),
+                ("Flags_CC", "uint8", 3, 1, null),
             ]),
         ]);
 
