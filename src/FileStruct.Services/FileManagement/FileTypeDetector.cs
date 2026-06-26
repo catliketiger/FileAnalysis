@@ -71,6 +71,7 @@ public class FileTypeDetector : IFileTypeDetector
         [".lock"] = (FileCategory.Text, "Lock 文件", "text/plain"),
         [".sln"] = (FileCategory.Text, "解决方案文件", "text/plain"),
         [".csproj"] = (FileCategory.Text, "C# 项目文件", "application/xml"),
+        [".class"] = (FileCategory.Executable, "Java Class 文件", "application/java-vm"),
         [".fsproj"] = (FileCategory.Text, "F# 项目文件", "application/xml"),
         [".vbproj"] = (FileCategory.Text, "VB 项目文件", "application/xml"),
         [".props"] = (FileCategory.Text, "MSBuild 属性文件", "application/xml"),

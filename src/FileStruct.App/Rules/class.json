@@ -1,0 +1,29 @@
+{
+  "ruleVersion": "1.0",
+  "format": "Java Class",
+  "description": "Java Class 文件结构（定长头部，后续为变长常量池等）",
+  "signatures": [
+    {
+      "name": "Java Class Magic",
+      "pattern": [202, 254, 186, 190],
+      "offset": 0,
+      "minFileSize": 28
+    }
+  ],
+  "structures": [
+    {
+      "name": "Class File Header",
+      "type": "struct",
+      "fields": [
+        { "name": "Magic", "type": "uint32", "offset": 0, "length": 4, "endianness": "BigEndian" },
+        { "name": "MinorVersion", "type": "uint16", "offset": 4, "length": 2, "endianness": "BigEndian" },
+        { "name": "MajorVersion", "type": "uint16", "offset": 6, "length": 2, "endianness": "BigEndian" },
+        { "name": "ConstantPoolCount", "type": "uint16", "offset": 8, "length": 2, "endianness": "BigEndian" },
+        { "name": "AccessFlags", "type": "uint16", "offset": -1, "length": 2, "endianness": "BigEndian" },
+        { "name": "ThisClass", "type": "uint16", "offset": -1, "length": 2, "endianness": "BigEndian" },
+        { "name": "SuperClass", "type": "uint16", "offset": -1, "length": 2, "endianness": "BigEndian" },
+        { "name": "InterfacesCount", "type": "uint16", "offset": -1, "length": 2, "endianness": "BigEndian" }
+      ]
+    }
+  ]
+}
