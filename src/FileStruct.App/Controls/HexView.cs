@@ -512,9 +512,12 @@ public class HexRowList : IList
     public void RemoveAt(int index) => throw new NotSupportedException();
 
     public void CopyTo(Array array, int index) { }
-    /// <summary>禁止全量枚举（大文件会有数亿行）。WPF VirtualizingStackPanel 使用索引器按需访问。</summary>
-    public IEnumerator GetEnumerator() =>
-        throw new NotSupportedException("HexRowList 不支持全量枚举，请使用索引器按需访问");
+    /// <summary>惰性枚举：按需逐个构建行。WPF VirtualizingStackPanel 仅通过索引器访问可见行，不会遍历全部。</summary>
+    public IEnumerator GetEnumerator()
+    {
+        for (int i = 0; i < Count; i++)
+            yield return BuildRow(i);
+    }
 }
 
 /// <summary>
