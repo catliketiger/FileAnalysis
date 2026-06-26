@@ -103,10 +103,11 @@ From `.spec/开发规范.md`:
 
 1. **TDD-first**: Write unit/integration tests before core logic.
 2. **Plan with user**: For large/complex changes, plan first — interact with the user to clarify requirements and eliminate ambiguity before generating code.
-3. **Git before edit**: Commit before modifying files for rollback.
-4. **ASCII Art for UI**: Use ASCII art diagrams for UI mockups.
-5. **DEBUG switch**: Ship in DEBUG mode first (Serilog file logging), switch to Release after tests pass.
-6. **Version audit**: After major version commits, trigger a version audit to verify no required features were missed.
+3. **Break down big tasks**: Split large/complex requirements into smaller tasks and complete incrementally.
+4. **Git before edit**: Commit before modifying files for rollback.
+5. **ASCII Art for UI**: Use ASCII art diagrams for UI mockups.
+6. **DEBUG switch**: Ship in DEBUG mode first (Serilog file logging), key info logged to file. Switch to Release after tests pass.
+7. **Version audit**: After major version commits, audit for missing required features.
 
 ## Version Roadmap
 
