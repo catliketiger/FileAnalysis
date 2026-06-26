@@ -98,6 +98,44 @@ public class ProjectSerializerTests
     }
 
     [Fact]
+    public void SerializeDeserialize_WithStructureTree_RoundTrips()
+    {
+        // 构建一个简单的结构树
+        var root = new StructureNode { Name = "文件根", Offset = 0, Length = 100 };
+        var format = new StructureNode { Name = "BMP", Offset = 0, Length = 100, DataType = FieldDataType.Struct };
+        var magic = new StructureNode { Name = "Magic", Offset = 0, Length = 2, DataType = FieldDataType.Bytes };
+        var width = new StructureNode { Name = "Width", Offset = 18, Length = 4, DataType = FieldDataType.Int32LE };
+        format.AddChild(magic);
+        format.AddChild(width);
+        root.AddChild(format);
+
+        var project = new ProjectFile
+        {
+            SourceFile = new SourceFileInfo { FileName = "test.bmp", FileSize = 100 },
+            StructureRoot = root,
+        };
+
+        var json = _serializer.Serialize(project);
+        Assert.NotNull(json);
+        Assert.Contains("文件根", json);
+        Assert.Contains("BMP", json);
+
+        var deserialized = _serializer.Deserialize(json);
+        Assert.NotNull(deserialized.StructureRoot);
+        Assert.Equal("文件根", deserialized.StructureRoot.Name);
+        Assert.Single(deserialized.StructureRoot.Children);
+        Assert.Equal("BMP", deserialized.StructureRoot.Children[0].Name);
+        Assert.Equal(2, deserialized.StructureRoot.Children[0].Children.Count);
+        Assert.Equal("Magic", deserialized.StructureRoot.Children[0].Children[0].Name);
+        Assert.Null(deserialized.StructureRoot.Children[0].Parent); // Parent was [JsonIgnore]
+
+        // 重建父引用
+        deserialized.StructureRoot.RebuildParentReferences();
+        Assert.NotNull(deserialized.StructureRoot.Children[0].Parent);
+        Assert.Same(deserialized.StructureRoot, deserialized.StructureRoot.Children[0].Parent);
+    }
+
+    [Fact]
     public async Task ComputeHashAsync_ValidFile_ReturnsHexString()
     {
         var path = Path.GetTempFileName();
