@@ -217,6 +217,8 @@ public class FileTypeDetector : IFileTypeDetector
         ([0x4D, 0x54, 0x68, 0x64], 0, FileCategory.Audio, "MIDI 文件", "audio/midi"),
 
         // ═══ 视频 ═══
+        ([0x41, 0x56, 0x49, 0x20], 8, FileCategory.Video, "AVI 视频", "video/x-msvideo"),
+        ([0x66, 0x74, 0x79, 0x70], 4, FileCategory.Video, "MP4 视频", "video/mp4"),
         ([0x1A, 0x45, 0xDF, 0xA3], 0, FileCategory.Video, "MKV/WebM 视频", "video/x-matroska"),
         ([0x46, 0x4C, 0x56], 0, FileCategory.Video, "FLV 视频", "video/x-flv"),
 

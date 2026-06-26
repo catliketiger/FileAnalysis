@@ -27,11 +27,12 @@ public static class BuiltinSignatures
         new("AIFF", [0x46, 0x4F, 0x52, 0x4D], description: "AIFF 音频"), // FORM header
 
         // ═══ 视频 ═══
-        new("AVI", [0x52, 0x49, 0x46, 0x46], description: "AVI 视频"), // RIFF header + AVI
+        new("AVI", [0x41, 0x56, 0x49, 0x20], magicOffset: 8,
+            description: "AVI 视频"), // "AVI " at offset 8 in RIFF header
         new("MKV", [0x1A, 0x45, 0xDF, 0xA3], description: "MKV/WebM 视频"),
         new("FLV", [0x46, 0x4C, 0x56], description: "FLV 视频"),
-        new("MP4", [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70],
-            description: "MP4/MOV 视频"),
+        new("MP4", [0x66, 0x74, 0x79, 0x70], magicOffset: 4,
+            description: "MP4/MOV 视频"), // "ftyp" box at offset 4
 
         // ═══ 压缩/归档 ═══
         new("ZIP", [0x50, 0x4B, 0x03, 0x04], description: "ZIP 压缩包"),
@@ -54,6 +55,8 @@ public static class BuiltinSignatures
         new("DEB", [0x21, 0x3C, 0x61, 0x72, 0x63, 0x68, 0x3E],
             description: "Debian 软件包"), // !<arch>
         new("RPM", [0xED, 0xAB, 0xEE, 0xDB], description: "RPM 软件包"),
+        new("DMG", [0x78, 0x01, 0x73, 0x0D, 0x62, 0x62, 0x60],
+            description: "macOS 磁盘映像 (zlib)"),
 
         // ═══ 文档 ═══
         new("PDF", [0x25, 0x50, 0x44, 0x46], description: "PDF 文档"),
