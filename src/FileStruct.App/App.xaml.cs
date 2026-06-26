@@ -75,7 +75,6 @@ public partial class App : Application
         });
 
         services.AddSingleton<ISignatureMatcher, SignatureMatcher>();
-        services.AddSingleton<IHeuristicEngine, HeuristicEngine>();
         services.AddSingleton<IConfidenceScorer, ConfidenceScorer>();
         services.AddSingleton<IStructureRecognizer, StructureRecognizer>();
 

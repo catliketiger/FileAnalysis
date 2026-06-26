@@ -6,20 +6,17 @@ namespace FileStruct.Services.StructureRecognition;
 public class StructureRecognizer : IStructureRecognizer
 {
     private readonly ISignatureMatcher _signatureMatcher;
-    private readonly IHeuristicEngine _heuristicEngine;
     private readonly IConfidenceScorer _confidenceScorer;
     private readonly IRuleEngine _ruleEngine;
     private readonly ILogService _logger;
 
     public StructureRecognizer(
         ISignatureMatcher signatureMatcher,
-        IHeuristicEngine heuristicEngine,
         IConfidenceScorer confidenceScorer,
         IRuleEngine ruleEngine,
         ILogService logger)
     {
         _signatureMatcher = signatureMatcher;
-        _heuristicEngine = heuristicEngine;
         _confidenceScorer = confidenceScorer;
         _ruleEngine = ruleEngine;
         _logger = logger;
@@ -30,7 +27,7 @@ public class StructureRecognizer : IStructureRecognizer
         return RecognizeAsync(buffer).GetAwaiter().GetResult();
     }
 
-    public async Task<StructureNode> RecognizeAsync(BinaryBuffer buffer,
+    public Task<StructureNode> RecognizeAsync(BinaryBuffer buffer,
         IProgress<RecognitionProgress>? progress = null,
         CancellationToken ct = default)
     {
@@ -197,12 +194,18 @@ public class StructureRecognizer : IStructureRecognizer
         }
         else
         {
-            _logger.Info("签名匹配无结果，进入启发式推断");
-            // Stage 2: 启发式推断（仅当签名未匹配时）
-            progress?.Report(new RecognitionProgress(50, "正在进行启发式推断..."));
-            var heuristicResult = await _heuristicEngine.InferAsync(buffer, progress, ct);
-            foreach (var child in heuristicResult.Children)
-                root.AddChild(child);
+            _logger.Info("签名匹配无结果，显示 Unknown 根节点");
+            progress?.Report(new RecognitionProgress(50, "未识别到已知格式..."));
+            root.AddChild(new StructureNode
+            {
+                Name = "Unknown",
+                Offset = 0,
+                Length = buffer.Length,
+                DataType = FieldDataType.Bytes,
+                Confidence = -1,
+                Source = StructureNodeSource.AutoDetected,
+                Description = "未能自动识别文件格式，可手动添加字段",
+            });
         }
 
         ct.ThrowIfCancellationRequested();
@@ -220,7 +223,7 @@ public class StructureRecognizer : IStructureRecognizer
         progress?.Report(new RecognitionProgress(100, "结构识别完成"));
         _logger.Info($"结构识别完成，共 {CountNodes(root)} 个节点");
 
-        return root;
+        return Task.FromResult(root);
     }
 
     /// <summary>获取动态偏移格式的基址偏移量</summary>
