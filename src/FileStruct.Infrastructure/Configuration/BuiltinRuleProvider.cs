@@ -45,6 +45,7 @@ public static class BuiltinRuleProvider
         PdfRule(),
         OggRule(),
         Mp4Rule(),
+        JpgRule(),
     ];
 
     private static FormatRule CreateRule(string format, string desc,
@@ -683,6 +684,27 @@ public static class BuiltinRuleProvider
             ], false),
             ("FileBody", [
                 ("Content", "bytes", 32, 0x100000, null),
+            ], false),
+        ]);
+
+    private static FormatRule JpgRule() => CreateRule("JPEG", "JPEG 图片文件结构",
+        [([0xFF, 0xD8, 0xFF], 0, 2)],
+        [
+            ("SOI (Start of Image)", [
+                ("Marker", "bytes", 0, 2, null),
+            ], false),
+            ("APP0 / JFIF", [
+                ("Marker", "bytes", 2, 2, null),
+                ("SegmentLength", "uint16", 4, 2, "BigEndian"),
+                ("Identifier", "ascii", 6, 5, null),
+                ("MajorVersion", "uint8", 11, 1, null),
+                ("MinorVersion", "uint8", 12, 1, null),
+                ("DensityUnits", "uint8", 13, 1, null),
+                ("XDensity", "uint16", 14, 2, "BigEndian"),
+                ("YDensity", "uint16", 16, 2, "BigEndian"),
+            ], false),
+            ("Segments & ImageData", [
+                ("Data", "bytes", 20, 0x100000, null),
             ], false),
         ]);
 }
