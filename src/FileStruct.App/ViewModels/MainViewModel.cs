@@ -333,7 +333,7 @@ public partial class MainViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(inputText))
         {
             inputText = Microsoft.VisualBasic.Interaction.InputBox(
-                "请输入偏移地址\n支持十进制 (1024) 或十六进制 (0x400)",
+                "请输入偏移地址（支持十进制或 0x 十六进制）",
                 "跳转到偏移", "0x");
             if (string.IsNullOrWhiteSpace(inputText)) return;
         }
