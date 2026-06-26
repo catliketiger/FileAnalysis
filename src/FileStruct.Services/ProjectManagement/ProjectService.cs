@@ -61,7 +61,10 @@ public class ProjectService : IProjectService
         if (!File.Exists(sourceFilePath))
             return false;
 
-        var hash = _serializer.ComputeHashAsync(sourceFilePath).GetAwaiter().GetResult();
+        // 使用同步方式计算哈希，避免在 UI 线程上 .GetResult() 死锁
+        using var stream = File.OpenRead(sourceFilePath);
+        var hashBytes = System.Security.Cryptography.SHA256.HashData(stream);
+        var hash = Convert.ToHexStringLower(hashBytes);
         var match = string.Equals(hash, project.SourceFile.Sha256Hash,
             StringComparison.OrdinalIgnoreCase);
 
