@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="200" d:DesignWidth="400">
-    <Border BorderBrush="#DDD" BorderThickness="1" Padding="8" Margin="4">
+    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="8" Margin="4">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

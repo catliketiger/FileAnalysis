@@ -25,7 +25,7 @@
                 <TextBlock Grid.Column="0"
                            Text="{Binding OffsetString}"
                            FontFamily="Cascadia Code" FontSize="13"
-                           Foreground="#888" Margin="4,0"/>
+                           Foreground="{DynamicResource TextSecondaryBrush}" Margin="4,0"/>
 
                 <!-- 十六进制列 - 逐字节显示 -->
                 <ItemsControl Grid.Column="1"
@@ -43,7 +43,7 @@
                 <TextBlock Grid.Column="2"
                            Text="{Binding AsciiString}"
                            FontFamily="Cascadia Code" FontSize="13"
-                           Foreground="#555" Margin="8,0,0,0"/>
+                           Foreground="{DynamicResource TextMutedBrush}" Margin="8,0,0,0"/>
             </Grid>
         </Border>
     </DataTemplate>
@@ -63,7 +63,7 @@
                                  ScrollViewer.CanContentScroll="True"
                                  ItemTemplate="{StaticResource HexRowTemplate}"
                                  BorderThickness="0"
-                                 Background="White"
+                                 Background="{DynamicResource ContentBackgroundBrush}"
                                  FontSize="13">
                             <ListBox.ContextMenu>
                                 <ContextMenu>

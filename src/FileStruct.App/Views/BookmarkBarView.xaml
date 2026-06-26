@@ -12,7 +12,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="#F5F5F5" Padding="8,4">
+        <Border Grid.Row="0" Background="{DynamicResource PanelHeaderBackgroundBrush}" Padding="8,4">
             <TextBlock Text="书签" FontWeight="Bold"/>
         </Border>
 
@@ -31,7 +31,7 @@
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding Offset, StringFormat={}0x{0:X8}}" FontFamily="Consolas" Foreground="Gray"/>
+                        <TextBlock Text="{Binding Offset, StringFormat={}0x{0:X8}}" FontFamily="Consolas" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         <TextBlock Text="{Binding Name}" Margin="8,0,0,0"/>
                     </StackPanel>
                 </DataTemplate>

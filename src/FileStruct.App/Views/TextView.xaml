@@ -27,7 +27,7 @@
         </StackPanel>
 
         <!-- 文本显示 -->
-        <ScrollViewer Grid.Row="1" Background="White" Padding="8">
+        <ScrollViewer Grid.Row="1" Background="{DynamicResource ContentBackgroundBrush}" Padding="8">
             <TextBox x:Name="TextContentBox"
                      IsReadOnly="True"
                      TextWrapping="Wrap"

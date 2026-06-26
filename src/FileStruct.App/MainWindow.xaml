@@ -103,14 +103,14 @@
             </Grid.ColumnDefinitions>
 
             <!-- 左侧面板：结构树 + 文件元数据 -->
-            <Border Grid.Column="0" BorderBrush="#DDD" BorderThickness="1" Margin="0,0,4,0">
+            <Border Grid.Column="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,4,0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" MinHeight="120"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto" MinHeight="80"/>
                     </Grid.RowDefinitions>
-                    <Border Grid.Row="0" Background="#F5F5F5" Padding="8,4">
+                    <Border Grid.Row="0" Background="{DynamicResource PanelHeaderBackgroundBrush}" Padding="8,4">
                         <TextBlock Text="结构树" FontWeight="Bold"/>
                     </Border>
                     <views:StructureTreeView Grid.Row="0" x:Name="StructTreeView"/>
@@ -119,7 +119,7 @@
                                   ShowsPreview="False" Background="Transparent"
                                   ResizeBehavior="PreviousAndNext"/>
 
-                    <Border Grid.Row="2" Background="#FAFAFA" Padding="6,4"
+                    <Border Grid.Row="2" Background="{DynamicResource PanelBackgroundBrush}" Padding="6,4"
                             DataContext="{Binding FileMeta}">
                         <StackPanel TextBlock.FontSize="11">
                             <TextBlock Text="文件信息" FontWeight="Bold" Margin="0,0,0,4"

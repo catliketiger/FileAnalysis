@@ -11,6 +11,7 @@ using FileStruct.Services.ProjectManagement;
 using FileStruct.Services.StructureRecognition;
 using FileStruct.Services.EditService;
 using FileStruct.Services.RuleEngine;
+using FileStruct.App.Services;
 using FileStruct.App.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -37,6 +38,11 @@ public partial class App : Application
         var config = configStore.LoadConfig();
         services.AddSingleton(config);
         services.AddSingleton(configStore);
+
+        // 主题服务（单例）
+        var themeService = new ThemeService();
+        themeService.ApplyTheme(config.UI.Theme);
+        services.AddSingleton(themeService);
 
         var logService = new LogService(config);
         services.AddSingleton<ILogService>(logService);

@@ -23,7 +23,7 @@
                 <ComboBoxItem Tag="4">4</ComboBoxItem>
                 <ComboBoxItem Tag="8">8</ComboBoxItem>
             </ComboBox>
-            <Separator Width="1" Background="#CCC" Margin="8,4"/>
+            <Separator Width="1" Background="{DynamicResource SeparatorBrush}" Margin="8,4"/>
             <CheckBox Content="小端" VerticalAlignment="Center"
                       IsChecked="{Binding HexEditor.IsLittleEndian}"/>
         </StackPanel>

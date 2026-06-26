@@ -5,6 +5,8 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- 默认浅色主题（在 App.xaml.cs 中根据配置切换） -->
+                <ResourceDictionary Source="Styles/Themes/LightTheme.xaml"/>
                 <ResourceDictionary Source="Styles/Generic.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
