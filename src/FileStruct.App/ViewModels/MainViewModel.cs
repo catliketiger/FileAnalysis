@@ -87,11 +87,12 @@ public partial class MainViewModel : ObservableObject
 
         if (dialog.ShowDialog() != true) return;
 
+        // 关闭当前文件
+        CloseFile();
+
         try
         {
             StatusText = "正在加载文件...";
-
-            _buffer?.Dispose();
             _buffer = await _fileService.LoadFileAsync(dialog.FileName);
 
             // 检测类型
