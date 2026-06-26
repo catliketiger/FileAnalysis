@@ -207,10 +207,11 @@ public class HexView : Control
             return;
 
         // 仅遍历可见行范围（大文件数亿行，绝不能遍历所有）
+        // CanContentScroll=True 时 VerticalOffset/ViewportHeight 以行为单位
         if (_scrollViewer == null) return;
-        var bytesPerRow = BytesPerRow > 0 ? BytesPerRow : 16;
         int firstVisible = (int)(_scrollViewer.VerticalOffset);
-        int lastVisible = firstVisible + (int)(_scrollViewer.ViewportHeight / 20) + 1;
+        int viewportRows = Math.Max(1, (int)(_scrollViewer.ViewportHeight));
+        int lastVisible = firstVisible + viewportRows + 1;
         for (int i = firstVisible; i <= lastVisible; i++)
         {
             if (generator.ContainerFromIndex(i) is ListBoxItem item && item.Content is HexRowData)
@@ -410,7 +411,8 @@ public class HexView : Control
         if (scrollViewer != null)
         {
             var rowIndex = (int)(offset / BytesPerRow);
-            var viewportRows = Math.Max(1, (int)(scrollViewer.ViewportHeight / 20)); // ~20px/行
+            // CanContentScroll=True 时 ViewportHeight 以行为单位
+            var viewportRows = Math.Max(1, (int)(scrollViewer.ViewportHeight));
             var targetRow = Math.Max(0, rowIndex - viewportRows / 2);
             scrollViewer.ScrollToVerticalOffset(targetRow);
         }
