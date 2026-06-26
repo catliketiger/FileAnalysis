@@ -91,6 +91,7 @@ public class FileTypeDetector : IFileTypeDetector
         [".deb"] = (FileCategory.Executable, "Debian 软件包", "application/vnd.debian.binary-package"),
         [".rpm"] = (FileCategory.Executable, "RPM 软件包", "application/x-rpm"),
         [".run"] = (FileCategory.Executable, "Linux 安装脚本", "application/x-executable"),
+        [".lnk"] = (FileCategory.Binary, "Windows 快捷方式", "application/x-ms-shortcut"),
 
         // ═══ 压缩/归档 ═══
         [".zip"] = (FileCategory.Archive, "ZIP 压缩包", "application/zip"),
@@ -254,6 +255,9 @@ public class FileTypeDetector : IFileTypeDetector
         ([0x76, 0x68, 0x64, 0x78, 0x66, 0x69, 0x6C, 0x65], 0, FileCategory.Binary, "VHDX 虚拟磁盘", "application/x-vhd"),
         ([0x51, 0x46, 0x49, 0xFB], 0, FileCategory.Binary, "QCOW2 磁盘映像", "application/x-qemu-disk"),
         ([0x43, 0x44, 0x30, 0x30, 0x31], 0x8001, FileCategory.Binary, "ISO 9660 光盘映像", "application/x-iso9660-image"),
+
+        // 快捷方式
+        ([0x4C, 0x00, 0x00, 0x00, 0x01, 0x14, 0x02, 0x00], 0, FileCategory.Binary, "Windows 快捷方式", "application/x-ms-shortcut"),
 
         // 其他
         ([0xCA, 0xFE, 0xBA, 0xBE], 0, FileCategory.Binary, "Java Class 文件", "application/java-vm"),
