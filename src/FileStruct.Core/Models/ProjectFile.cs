@@ -28,6 +28,9 @@ public class ProjectFile
 
     /// <summary>用户备注列表</summary>
     public List<UserNote> Notes { get; set; } = new();
+
+    /// <summary>结构树根节点（识别出的结构字段）</summary>
+    public StructureNode? StructureRoot { get; set; }
 }
 
 /// <summary>

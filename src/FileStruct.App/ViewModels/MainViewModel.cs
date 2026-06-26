@@ -168,6 +168,7 @@ public partial class MainViewModel : ObservableObject
                     ScrollOffset = HexEditor.ScrollOffset,
                     ByteGroupSize = HexEditor.ByteGroupSize,
                 },
+                StructureRoot = StructureTree.RootNode,
             };
             await _projectService.SaveAsync(project, dialog.FileName);
             StatusText = "项目已保存";
@@ -216,6 +217,13 @@ public partial class MainViewModel : ObservableObject
                     ActiveView = project.ViewState.ActiveView;
                     HexEditor.ScrollOffset = project.ViewState.ScrollOffset;
                     HexEditor.ByteGroupSize = project.ViewState.ByteGroupSize;
+                }
+
+                // 恢复结构树
+                if (project.StructureRoot != null)
+                {
+                    project.StructureRoot.RebuildParentReferences();
+                    StructureTree.LoadTree(project.StructureRoot);
                 }
 
                 IsFileLoaded = true;

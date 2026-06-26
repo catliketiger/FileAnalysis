@@ -104,15 +104,32 @@ public class StructureNode : INotifyPropertyChanged
         set => SetProperty(ref _highlightColor, value);
     }
 
+    [System.Text.Json.Serialization.JsonIgnore]
     public StructureNode? Parent { get; set; }
 
     public List<StructureNode> Children { get; set; } = new();
 
+    [System.Text.Json.Serialization.JsonIgnore]
     public StructureNode? OriginalSnapshot { get; set; }
 
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool IsLeaf => Children.Count == 0;
+
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool IsRoot => Parent == null;
+
+    [System.Text.Json.Serialization.JsonIgnore]
     public string PathName => Parent == null ? Name : $"{Parent.PathName}/{Name}";
+
+    /// <summary>反序列化后重建 Parent 引用链</summary>
+    public void RebuildParentReferences()
+    {
+        foreach (var child in Children)
+        {
+            child.Parent = this;
+            child.RebuildParentReferences();
+        }
+    }
 
     public void AddChild(StructureNode child)
     {
