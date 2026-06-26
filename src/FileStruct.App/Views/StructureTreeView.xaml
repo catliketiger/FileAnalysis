@@ -15,7 +15,8 @@
         <!-- 搜索框 -->
         <TextBox Grid.Row="0" x:Name="SearchBox"
                  Margin="4" Padding="4"
-                 Text="" KeyDown="SearchBox_KeyDown"/>
+                 Text="" KeyDown="SearchBox_KeyDown"
+                 ToolTip="输入字段名称按 Enter 搜索定位"/>
 
         <!-- 结构树 -->
         <TreeView Grid.Row="1" x:Name="StructTree"
