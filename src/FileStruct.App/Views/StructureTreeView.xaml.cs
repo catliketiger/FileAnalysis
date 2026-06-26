@@ -7,6 +7,8 @@ namespace FileStruct.App.Views;
 
 public partial class StructureTreeView : UserControl
 {
+    private bool _isSyncingSelection;
+
     public StructureTreeView()
     {
         InitializeComponent();
@@ -15,16 +17,27 @@ public partial class StructureTreeView : UserControl
 
     private void OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
+        // 重入守卫：防止 Search→选中→Hex导航→Hex选择变化→SelectNodeByOffset→重入SelectedItemChanged
+        if (_isSyncingSelection) return;
+
         if (e.NewValue is TreeItemViewModel item &&
             DataContext is MainViewModel mainVm)
         {
-            var node = item.Node;
-            mainVm.StructureTree.SelectedNode = node;
-            // 使用 NavigateToOffset 实现居中 + 高亮
-            mainVm.HexEditor.NavigateToOffset = node.Offset;
-            mainVm.HexEditor.NavigateToLength = (int)Math.Max(1, node.Length);
-            mainVm.HexEditor.SelectionInfo = $"字段: {node.Name} @ 0x{node.Offset:X}, 长度 {node.Length}";
-            mainVm.StatusText = $"已定位到字段: {node.Name}";
+            _isSyncingSelection = true;
+            try
+            {
+                var node = item.Node;
+                mainVm.StructureTree.SelectedNode = node;
+                // 使用 NavigateToOffset 实现居中 + 高亮
+                mainVm.HexEditor.NavigateToOffset = node.Offset;
+                mainVm.HexEditor.NavigateToLength = (int)Math.Max(1, node.Length);
+                mainVm.HexEditor.SelectionInfo = $"字段: {node.Name} @ 0x{node.Offset:X}, 长度 {node.Length}";
+                mainVm.StatusText = $"已定位到字段: {node.Name}";
+            }
+            finally
+            {
+                _isSyncingSelection = false;
+            }
         }
     }
 
