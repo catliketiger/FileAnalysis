@@ -222,9 +222,25 @@ public partial class StructureTreeView : UserControl
 
         try
         {
-            var json = StructureTreeViewModel.ExportAsJson(item.Node, item.Node.Name);
+            // 如果第一个子字段在偏移0且有数据，自动从文件读取魔数
+            byte[]? magicBytes = null;
+            int magicOffset = 0;
+            var firstChild = item.Node.Children.FirstOrDefault();
+            if (firstChild != null && firstChild.Offset == 0 && firstChild.Length > 0)
+            {
+                // 尝试从打开的Buffer读取魔数字节
+                if (mainVm.HexEditor.Buffer != null)
+                {
+                    var len = (int)Math.Min(firstChild.Length, 32);
+                    magicBytes = mainVm.HexEditor.Buffer.ReadBytes(0, len);
+                }
+            }
+
+            var json = StructureTreeViewModel.ExportAsJson(item.Node, item.Node.Name,
+                magicBytes, magicOffset);
             File.WriteAllText(dialog.FileName, json);
-            mainVm.StatusText = $"结构已导出: {dialog.FileName}";
+            mainVm.StatusText = $"结构已导出: {dialog.FileName}" +
+                (magicBytes != null ? $" (包含 {magicBytes.Length} 字节魔数)" : "");
         }
         catch (Exception ex)
         {

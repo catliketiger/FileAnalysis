@@ -36,12 +36,6 @@ public partial class FieldEditViewModel : ObservableObject
     [ObservableProperty]
     private FieldEndianness _endianness = FieldEndianness.LittleEndian;
 
-    [ObservableProperty]
-    private string _magicHex = "";
-
-    [ObservableProperty]
-    private int _magicOffset;
-
     /// <summary>是否为新建模式（否则为编辑模式）</summary>
     public bool IsNew => _isNew;
 
