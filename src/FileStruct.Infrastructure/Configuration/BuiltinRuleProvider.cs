@@ -134,6 +134,10 @@ public static class BuiltinRuleProvider
                 ("BlockAlign", "uint16", 32, 2, null),
                 ("BitsPerSample", "uint16", 34, 2, null),
             ]),
+            ("WAVE data (PCM 标准位置)", [
+                ("SubChunk2ID", "ascii", 36, 4, null),
+                ("SubChunk2Size", "uint32", 40, 4, null),
+            ]),
         ]);
 
     private static FormatRule PeRule() => CreateRule("PE", "Windows PE 可执行文件结构",
@@ -157,6 +161,27 @@ public static class BuiltinRuleProvider
                 ("e_oemid", "uint16", 28, 2, null),
                 ("e_oeminfo", "uint16", 30, 2, null),
                 ("e_lfanew", "uint32", 60, 4, null),
+            ]),
+            ("PE Signature", [
+                ("PEMagic", "bytes", -4, 4, null),  // at e_lfanew = baseOffset - 4
+            ]),
+            ("COFF File Header", [
+                ("Machine", "uint16", 0, 2, null),
+                ("NumberOfSections", "uint16", 2, 2, null),
+                ("TimeDateStamp", "uint32", 4, 4, null),
+                ("PointerToSymbolTable", "uint32", 8, 4, null),
+                ("NumberOfSymbols", "uint32", 12, 4, null),
+                ("SizeOfOptionalHeader", "uint16", 16, 2, null),
+                ("Characteristics", "uint16", 18, 2, null),
+            ]),
+            ("Optional Header (Standard)",
+                [("Magic", "uint16", 20, 2, null),
+                ("LinkerVersion", "uint16", 22, 2, null),
+                ("SizeOfCode", "uint32", 24, 4, null),
+                ("SizeOfInitializedData", "uint32", 28, 4, null),
+                ("SizeOfUninitializedData", "uint32", 32, 4, null),
+                ("AddressOfEntryPoint", "uint32", 36, 4, null),
+                ("BaseOfCode", "uint32", 40, 4, null),
             ]),
         ]);
 
@@ -308,7 +333,7 @@ public static class BuiltinRuleProvider
             ]),
         ]);
 
-    private static FormatRule Id3v2Rule() => CreateRule("MP3-ID3", "MP3 ID3v2 标签结构",
+    private static FormatRule Id3v2Rule() => CreateRule("MP3-ID3", "MP3 ID3v2 标签结构 (后续帧位置动态)",
         [([0x49, 0x44, 0x33], 0, 10)],
         [
             ("ID3v2 Header", [

@@ -80,6 +80,9 @@ public class StructureRecognizer : IStructureRecognizer
 
             if (matchedRule != null && matchedRule.Structures.Count > 0)
             {
+                // 处理动态偏移格式（如 PE 需读取 e_lfanew 定位 COFF 头部）
+                var baseOffset = GetDynamicBaseOffset(formatName, buffer);
+
                 // 使用预置结构构建字段节点
                 foreach (var structDef in matchedRule.Structures)
                 {
@@ -95,10 +98,12 @@ public class StructureRecognizer : IStructureRecognizer
 
                     foreach (var fieldDef in structDef.Fields)
                     {
+                        // 所有偏移都相对于 baseOffset（非 PE 格式 baseOffset = 0）
+                        var realOffset = fieldDef.Offset + baseOffset;
                         var fieldNode = new StructureNode
                         {
                             Name = fieldDef.Name,
-                            Offset = fieldDef.Offset,
+                            Offset = realOffset,
                             Length = fieldDef.Length ?? GuessFieldLength(fieldDef.Type),
                             DataType = ParseFieldType(fieldDef.Type),
                             Endianness = fieldDef.Endianness == "BigEndian"
@@ -108,7 +113,6 @@ public class StructureRecognizer : IStructureRecognizer
                             Source = StructureNodeSource.AutoDetected,
                         };
 
-                        // 跳过位置未知的字段（负偏移表示从尾部算，暂不支持）
                         if (fieldNode.Offset >= 0 && fieldNode.Offset + fieldNode.Length <= buffer.Length)
                             structNode.AddChild(fieldNode);
                     }
@@ -162,6 +166,22 @@ public class StructureRecognizer : IStructureRecognizer
         _logger.Info($"结构识别完成，共 {CountNodes(root)} 个节点");
 
         return root;
+    }
+
+    /// <summary>获取动态偏移格式的基址偏移量</summary>
+    private static long GetDynamicBaseOffset(string formatName, BinaryBuffer buffer)
+    {
+        if (string.Equals(formatName, "PE", StringComparison.OrdinalIgnoreCase))
+        {
+            // PE 格式：e_lfanew 在 DOS Header 偏移 60 处
+            if (buffer.Length >= 64)
+            {
+                var eLfanew = buffer.ReadUInt32(60, true);
+                // PE signature at e_lfanew, COFF header at e_lfanew + 4
+                return eLfanew + 4; // 返回 COFF 头部的起始偏移
+            }
+        }
+        return 0;
     }
 
     private static int GuessFieldLength(string type) => type.ToLowerInvariant() switch
