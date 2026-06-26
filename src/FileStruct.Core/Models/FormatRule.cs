@@ -26,6 +26,11 @@ public class FormatStructure
     public string Name { get; set; } = "";
     public string Type { get; set; } = "struct";
     public bool Sequential { get; set; }
+    public bool Repeating { get; set; }
+    public int StepSize { get; set; }
+    public int? FixedCount { get; set; }
+    public string? CountField { get; set; }
+    public int BaseRepeatOffset { get; set; }
     public List<FormatField> Fields { get; set; } = new();
 }
 
@@ -36,4 +41,6 @@ public class FormatField
     public int Offset { get; set; }
     public int? Length { get; set; }
     public string? Endianness { get; set; }
+    public string? OffsetFromField { get; set; }
+    public string? LengthField { get; set; }
 }

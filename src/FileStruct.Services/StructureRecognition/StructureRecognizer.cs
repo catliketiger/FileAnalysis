@@ -87,58 +87,93 @@ public class StructureRecognizer : IStructureRecognizer
                 // 使用预置结构构建字段节点
                 foreach (var structDef in matchedRule.Structures)
                 {
-                    var structNode = new StructureNode
+                    // Repeating 模式：按固定步长重复同一结构
+                    var repeatBase = baseOffset + structDef.BaseRepeatOffset;
+                    var repeatCount = 1;
+                    if (structDef.Repeating)
                     {
-                        Name = structDef.Name,
-                        Offset = 0,
-                        Length = buffer.Length,
-                        DataType = FieldDataType.Struct,
-                        Confidence = bestMatch.Score,
-                        Source = StructureNodeSource.AutoDetected,
-                    };
+                        repeatCount = structDef.FixedCount ?? 1;
+                        // CountField：从文件读取动态重复次数
+                        if (structDef.CountField != null)
+                        {
+                            foreach (var fd in matchedRule.Structures.SelectMany(s => s.Fields))
+                            {
+                                if (fd.Name == structDef.CountField)
+                                {
+                                    var cfOff = fd.Offset + baseOffset;
+                                    if (cfOff + 2 <= buffer.Length)
+                                    {
+                                        var cv = (int)buffer.ReadUInt16(cfOff, true);
+                                        if (cv > 0 && cv < 65536) repeatCount = cv;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
 
-                    // sequential 模式：字段在结构中按顺序排列，偏移自动累加
-                    var structBaseOffset = baseOffset;
-                    long currentPos = structBaseOffset;
-
-                    foreach (var fieldDef in structDef.Fields)
+                    for (int rep = 0; rep < repeatCount; rep++)
                     {
-                        long realOffset;
-                        if (structDef.Sequential && fieldDef.Offset < 0)
+                        var repStep = structDef.Repeating ? rep * structDef.StepSize : 0;
+                        var structNode = new StructureNode
                         {
-                            // 顺序排列：使用当前位置
-                            realOffset = currentPos;
-                        }
-                        else
-                        {
-                            // 显式偏移：baseOffset 偏移（非 PE 格式 baseOffset = 0）
-                            realOffset = fieldDef.Offset + baseOffset;
-                            if (structDef.Sequential)
-                                currentPos = realOffset; // 覆盖序列位置
-                        }
-
-                        var fieldLen = fieldDef.Length ?? GuessFieldLength(fieldDef.Type);
-                        if (structDef.Sequential)
-                            currentPos += fieldLen; // 始终推进
-                        var fieldNode = new StructureNode
-                        {
-                            Name = fieldDef.Name,
-                            Offset = realOffset,
-                            Length = fieldDef.Length ?? GuessFieldLength(fieldDef.Type),
-                            DataType = ParseFieldType(fieldDef.Type),
-                            Endianness = fieldDef.Endianness == "BigEndian"
-                                ? FieldEndianness.BigEndian
-                                : FieldEndianness.LittleEndian,
-                            Confidence = 0.9,
+                            Name = structDef.Repeating ? $"{structDef.Name}[{rep}]" : structDef.Name,
+                            Offset = 0, Length = buffer.Length,
+                            DataType = FieldDataType.Struct,
+                            Confidence = bestMatch.Score,
                             Source = StructureNodeSource.AutoDetected,
                         };
 
-                        if (fieldNode.Offset >= 0 && fieldNode.Offset + fieldNode.Length <= buffer.Length)
-                            structNode.AddChild(fieldNode);
-                    }
+                        long currentPos = repeatBase + repStep;
 
-                    if (structNode.Children.Count > 0)
-                        formatNode.AddChild(structNode);
+                        foreach (var fieldDef in structDef.Fields)
+                        {
+                            var fieldBase = structDef.Repeating ? repeatBase + repStep : baseOffset;
+                            long realOffset;
+
+                            if (structDef.Sequential && fieldDef.Offset < 0)
+                                realOffset = currentPos;
+                            else
+                            {
+                                realOffset = fieldDef.Offset + fieldBase;
+                                if (structDef.Sequential) currentPos = realOffset;
+                            }
+
+                            // offsetFrom：从指定字段的值获取偏移增量
+                            if (fieldDef.OffsetFromField != null)
+                            {
+                                var refOff = fieldDef.Offset + fieldBase;
+                                if (refOff + 4 <= buffer.Length)
+                                    realOffset = buffer.ReadUInt32(refOff, true);
+                            }
+
+                            var fieldLen = fieldDef.Length ?? GuessFieldLength(fieldDef.Type);
+
+                            // lengthField：从指定字段的值获取长度
+                            if (fieldDef.LengthField != null)
+                            {
+                                var lenOff = fieldDef.Offset + fieldBase;
+                                if (lenOff + 4 <= buffer.Length)
+                                    fieldLen = (int)buffer.ReadUInt32(lenOff, true);
+                            }
+
+                            if (structDef.Sequential) currentPos += fieldLen;
+
+                            var fieldNode = new StructureNode
+                            {
+                                Name = fieldDef.Name,
+                                Offset = realOffset, Length = fieldLen,
+                                DataType = ParseFieldType(fieldDef.Type),
+                                Endianness = fieldDef.Endianness == "BigEndian"
+                                    ? FieldEndianness.BigEndian : FieldEndianness.LittleEndian,
+                                Confidence = 0.9, Source = StructureNodeSource.AutoDetected,
+                            };
+                            if (fieldNode.Offset >= 0 && fieldNode.Offset + fieldNode.Length <= buffer.Length)
+                                structNode.AddChild(fieldNode);
+                        }
+                        if (structNode.Children.Count > 0)
+                            formatNode.AddChild(structNode);
+                    }
                 }
             }
 

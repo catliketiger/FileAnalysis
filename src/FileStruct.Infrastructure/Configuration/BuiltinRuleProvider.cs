@@ -377,25 +377,34 @@ public static class BuiltinRuleProvider
             ], false),
         ]);
 
-    private static FormatRule IcoRule() => CreateRule("ICO", "ICO 图标文件结构",
-        [([0x00, 0x00, 0x01, 0x00], 0, 6)],
-        [
-            ("ICONDIR", [
-                ("Reserved", "uint16", 0, 2, null),
-                ("Type", "uint16", 2, 2, null),
-                ("Count", "uint16", 4, 2, null),
-            ], false),
-            ("ICONDIRENTRY(1)", [
-                ("Width", "uint8", 6, 1, null),
-                ("Height", "uint8", 7, 1, null),
-                ("ColorCount", "uint8", 8, 1, null),
-                ("Reserved", "uint8", 9, 1, null),
-                ("Planes", "uint16", 10, 2, null),
-                ("BitCount", "uint16", 12, 2, null),
-                ("BytesInRes", "uint32", 14, 4, null),
-                ("ImageOffset", "uint32", 18, 4, null),
-            ], false),
-        ]);
+    private static FormatRule IcoRule()
+    {
+        var rule = CreateRule("ICO", "ICO 图标文件结构",
+            [([0x00, 0x00, 0x01, 0x00], 0, 6)],
+            [
+                ("ICONDIR", [
+                    ("Reserved", "uint16", 0, 2, null),
+                    ("Type", "uint16", 2, 2, null),
+                    ("Count", "uint16", 4, 2, null),
+                ], false),
+                ("ICONDIRENTRY(1)", [
+                    ("Width", "uint8", 6, 1, null),
+                    ("Height", "uint8", 7, 1, null),
+                    ("ColorCount", "uint8", 8, 1, null),
+                    ("Reserved", "uint8", 9, 1, null),
+                    ("Planes", "uint16", 10, 2, null),
+                    ("BitCount", "uint16", 12, 2, null),
+                    ("BytesInRes", "uint32", 14, 4, null),
+                    ("ImageOffset", "uint32", 18, 4, null),
+                ], false),
+            ]);
+        // Repeating: 每个 ICONDIRENTRY 16 字节，数量由 Count 字段决定
+        rule.Structures[1].Repeating = true;
+        rule.Structures[1].StepSize = 16;
+        rule.Structures[1].CountField = "Count";
+        rule.Structures[1].BaseRepeatOffset = 6;
+        return rule;
+    }
 
     private static FormatRule SqliteRule() => CreateRule("SQLite", "SQLite 数据库文件结构",
         [([0x53, 0x51, 0x4C, 0x69, 0x74, 0x65, 0x20, 0x66, 0x6F, 0x72, 0x6D, 0x61, 0x74, 0x20, 0x33, 0x00], 0, 100)],
