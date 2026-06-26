@@ -202,6 +202,11 @@ public class FileTypeDetector : IFileTypeDetector
         [".img"] = (FileCategory.Binary, "磁盘映像", "application/octet-stream"),
         [".dsk"] = (FileCategory.Binary, "磁盘映像", "application/octet-stream"),
         [".hdd"] = (FileCategory.Binary, "虚拟硬盘", "application/octet-stream"),
+
+        // ═══ 调试文件 ═══
+        [".dmp"] = (FileCategory.Binary, "Windows Dump 文件", "application/x-dmp"),
+        [".mdmp"] = (FileCategory.Binary, "Windows Minidump 文件", "application/x-dmp"),
+        [".hdmp"] = (FileCategory.Binary, "Windows 完整转储", "application/x-dmp"),
     };
 
     // 常见文件魔数签名
@@ -264,6 +269,9 @@ public class FileTypeDetector : IFileTypeDetector
 
         // 数据库
         ([0x53, 0x51, 0x4C, 0x69, 0x74, 0x65, 0x20, 0x66, 0x6F, 0x72, 0x6D, 0x61, 0x74, 0x20, 0x33, 0x00], 0, FileCategory.Binary, "SQLite 数据库", "application/x-sqlite3"),
+
+        // 调试转储
+        ([0x4D, 0x44, 0x4D, 0x50], 0, FileCategory.Binary, "Windows Minidump", "application/x-dmp"),
 
         // 快捷方式
         ([0x4C, 0x00, 0x00, 0x00, 0x01, 0x14, 0x02, 0x00], 0, FileCategory.Binary, "Windows 快捷方式", "application/x-ms-shortcut"),

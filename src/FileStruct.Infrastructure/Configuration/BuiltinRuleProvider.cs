@@ -28,6 +28,7 @@ public static class BuiltinRuleProvider
         TiffRule(),
         TiffBeRule(),
         IcoRule(),
+        MinidumpRule(),
         SqliteRule(),
         TsRule(),
         IsoRule(),
@@ -405,6 +406,20 @@ public static class BuiltinRuleProvider
         rule.Structures[1].BaseRepeatOffset = 6;
         return rule;
     }
+
+    private static FormatRule MinidumpRule() => CreateRule("Minidump", "Windows Minidump 调试转储文件结构",
+        [([0x4D, 0x44, 0x4D, 0x50], 0, 32)],
+        [
+            ("Minidump Header", [
+                ("Signature", "ascii", 0, 4, null),
+                ("Version", "uint32", 4, 4, null),
+                ("NumberOfStreams", "uint32", 8, 4, null),
+                ("StreamDirectoryRva", "uint32", 12, 4, null),
+                ("CheckSum", "uint32", 16, 4, null),
+                ("TimeDateStamp", "uint32", 20, 4, null),
+                ("Flags", "uint64", 24, 8, null),
+            ]),
+        ]);
 
     private static FormatRule SqliteRule() => CreateRule("SQLite", "SQLite 数据库文件结构",
         [([0x53, 0x51, 0x4C, 0x69, 0x74, 0x65, 0x20, 0x66, 0x6F, 0x72, 0x6D, 0x61, 0x74, 0x20, 0x33, 0x00], 0, 100)],
