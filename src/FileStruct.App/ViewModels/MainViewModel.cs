@@ -114,7 +114,18 @@ public partial class MainViewModel : ObservableObject
 
             IsFileLoaded = true;
             WindowTitle = $"FileStruct - {_buffer.FileName}";
-            StatusText = "文件已加载";
+
+            // 自动识别结构（非纯文本文件）
+            if (!fileType.IsText)
+            {
+                StatusText = "正在自动识别结构...";
+                await RunRecognitionAsync();
+            }
+            else
+            {
+                StatusText = "文件已加载";
+            }
+
             _logger.Info($"文件已打开: {_buffer.FileName} ({_buffer.Length} 字节)");
         }
         catch (Exception ex)
@@ -455,21 +466,21 @@ public partial class MainViewModel : ObservableObject
     private async Task RecognizeAsync()
     {
         if (_buffer == null) return;
-
-        // 纯文本文件跳过结构识别
         if (HexEditor.FileType?.IsText == true)
         {
             StatusText = "纯文本文件无需结构识别";
             StructureTree.Clear();
             return;
         }
+        await RunRecognitionAsync();
+    }
 
+    private async Task RunRecognitionAsync()
+    {
         try
         {
             IsRecognizing = true;
-            StatusText = "正在进行结构识别...";
-
-            var result = await _recognizer.RecognizeAsync(_buffer,
+            var result = await _recognizer.RecognizeAsync(_buffer!,
                 new Progress<RecognitionProgress>(p =>
                 {
                     StatusText = p.StatusText;

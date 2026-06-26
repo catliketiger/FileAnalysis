@@ -19,9 +19,11 @@ public partial class StructureTreeView : UserControl
             DataContext is MainViewModel mainVm)
         {
             var node = item.Node;
-            var scrollOffset = (node.Offset / 16) * 16;
-            mainVm.HexEditor.ScrollOffset = scrollOffset;
+            // 使用 NavigateToOffset 实现居中 + 高亮
+            mainVm.HexEditor.NavigateToOffset = node.Offset;
+            mainVm.HexEditor.NavigateToLength = (int)Math.Max(1, node.Length);
             mainVm.HexEditor.SelectionInfo = $"字段: {node.Name} @ 0x{node.Offset:X}, 长度 {node.Length}";
+            mainVm.StatusText = $"已定位到字段: {node.Name}";
         }
     }
 
