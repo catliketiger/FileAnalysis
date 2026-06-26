@@ -43,14 +43,14 @@ public static class BuiltinRuleProvider
 
     private static FormatRule CreateRule(string format, string desc,
         (byte[] magic, int offset, int minSize)[] signatures,
-        (string name, (string field, string type, int offset, int len, string? endian)[] fields)[] structures)
+        (string name, (string field, string type, int offset, int len, string? endian)[] fields, bool seq)[] structures)
     {
         var rule = new FormatRule { Format = format, Description = desc, SourcePath = "builtin" };
         foreach (var (magic, offset, minSize) in signatures)
             rule.Signatures.Add(new FormatSignature { Name = $"{format} Magic", Pattern = magic, Offset = offset, MinFileSize = minSize });
-        foreach (var (name, fields) in structures)
+        foreach (var (name, fields, seq) in structures)
         {
-            var s = new FormatStructure { Name = name, Type = "struct" };
+            var s = new FormatStructure { Name = name, Type = "struct", Sequential = seq };
             foreach (var (field, type, off, len, endian) in fields)
                 s.Fields.Add(new FormatField { Name = field, Type = type, Offset = off, Length = len, Endianness = endian });
             rule.Structures.Add(s);
@@ -67,7 +67,7 @@ public static class BuiltinRuleProvider
                 ("bfReserved1", "uint16", 6, 2, null),
                 ("bfReserved2", "uint16", 8, 2, null),
                 ("bfOffBits", "uint32", 10, 4, "LittleEndian"),
-            ]),
+            ], false),
             ("BITMAPINFOHEADER", [
                 ("biSize", "uint32", 14, 4, null),
                 ("biWidth", "int32", 18, 4, null),
@@ -80,7 +80,7 @@ public static class BuiltinRuleProvider
                 ("biYPelsPerMeter", "int32", 42, 4, null),
                 ("biClrUsed", "uint32", 46, 4, null),
                 ("biClrImportant", "uint32", 50, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule GifRule() => CreateRule("GIF", "GIF 图片文件结构",
@@ -94,7 +94,7 @@ public static class BuiltinRuleProvider
                 ("PackedField", "uint8", 10, 1, null),
                 ("BgColorIndex", "uint8", 11, 1, null),
                 ("PixelAspect", "uint8", 12, 1, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule GzipRule() => CreateRule("GZip", "GZip 压缩文件结构",
@@ -108,24 +108,24 @@ public static class BuiltinRuleProvider
                 ("MTIME", "uint32", 4, 4, null),
                 ("XFL", "uint8", 8, 1, null),
                 ("OS", "uint8", 9, 1, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule PngRule() => CreateRule("PNG", "PNG 图片文件结构",
         [([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], 0, 29)],
         [
-            ("PNG Signature", [("Signature", "bytes", 0, 8, null)]),
+            ("PNG Signature", [("Signature", "bytes", 0, 8, null)], false),
             ("IHDR Chunk", [
                 ("DataLength", "uint32", 8, 4, null),
-                ("ChunkType", "ascii", 12, 4, null),
-                ("Width", "uint32", 16, 4, null),
-                ("Height", "uint32", 20, 4, null),
-                ("BitDepth", "uint8", 24, 1, null),
-                ("ColorType", "uint8", 25, 1, null),
-                ("Compression", "uint8", 26, 1, null),
-                ("Filter", "uint8", 27, 1, null),
-                ("Interlace", "uint8", 28, 1, null),
-            ]),
+                ("ChunkType", "ascii", -1, 4, null),
+                ("Width", "uint32", -1, 4, null),
+                ("Height", "uint32", -1, 4, null),
+                ("BitDepth", "uint8", -1, 1, null),
+                ("ColorType", "uint8", -1, 1, null),
+                ("Compression", "uint8", -1, 1, null),
+                ("Filter", "uint8", -1, 1, null),
+                ("Interlace", "uint8", -1, 1, null),
+            ], true),
         ]);
 
     private static FormatRule RiffRule() => CreateRule("RIFF", "RIFF 容器格式 (WAV/AVI)",
@@ -135,21 +135,21 @@ public static class BuiltinRuleProvider
                 ("ChunkID", "ascii", 0, 4, null),
                 ("ChunkSize", "uint32", 4, 4, null),
                 ("Format", "ascii", 8, 4, null),
-            ]),
+            ], false),
             ("WAVE fmt", [
                 ("SubChunk1ID", "ascii", 12, 4, null),
-                ("SubChunk1Size", "uint32", 16, 4, null),
-                ("AudioFormat", "uint16", 20, 2, null),
-                ("NumChannels", "uint16", 22, 2, null),
-                ("SampleRate", "uint32", 24, 4, null),
-                ("ByteRate", "uint32", 28, 4, null),
-                ("BlockAlign", "uint16", 32, 2, null),
-                ("BitsPerSample", "uint16", 34, 2, null),
-            ]),
+                ("SubChunk1Size", "uint32", -1, 4, null),
+                ("AudioFormat", "uint16", -1, 2, null),
+                ("NumChannels", "uint16", -1, 2, null),
+                ("SampleRate", "uint32", -1, 4, null),
+                ("ByteRate", "uint32", -1, 4, null),
+                ("BlockAlign", "uint16", -1, 2, null),
+                ("BitsPerSample", "uint16", -1, 2, null),
+            ], true),
             ("WAVE data (PCM 标准位置)", [
                 ("SubChunk2ID", "ascii", 36, 4, null),
                 ("SubChunk2Size", "uint32", 40, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule PeRule() => CreateRule("PE", "Windows PE 可执行文件结构",
@@ -173,10 +173,10 @@ public static class BuiltinRuleProvider
                 ("e_oemid", "uint16", 28, 2, null),
                 ("e_oeminfo", "uint16", 30, 2, null),
                 ("e_lfanew", "uint32", 60, 4, null),
-            ]),
+            ], false),
             ("PE Signature", [
                 ("PEMagic", "bytes", -4, 4, null),  // at e_lfanew = baseOffset - 4
-            ]),
+            ], false),
             ("COFF File Header", [
                 ("Machine", "uint16", 0, 2, null),
                 ("NumberOfSections", "uint16", 2, 2, null),
@@ -185,7 +185,7 @@ public static class BuiltinRuleProvider
                 ("NumberOfSymbols", "uint32", 12, 4, null),
                 ("SizeOfOptionalHeader", "uint16", 16, 2, null),
                 ("Characteristics", "uint16", 18, 2, null),
-            ]),
+            ], false),
             ("Optional Header (Standard)",
                 [("Magic", "uint16", 20, 2, null),
                 ("LinkerVersion", "uint16", 22, 2, null),
@@ -194,7 +194,7 @@ public static class BuiltinRuleProvider
                 ("SizeOfUninitializedData", "uint32", 32, 4, null),
                 ("AddressOfEntryPoint", "uint32", 36, 4, null),
                 ("BaseOfCode", "uint32", 40, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule ElfRule() => CreateRule("ELF", "ELF 可执行与链接格式",
@@ -220,7 +220,7 @@ public static class BuiltinRuleProvider
                 ("e_shentsize", "uint16", 58, 2, null),
                 ("e_shnum", "uint16", 60, 2, null),
                 ("e_shstrndx", "uint16", 62, 2, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule ZipRule() => CreateRule("ZIP", "ZIP 压缩包结构",
@@ -238,7 +238,7 @@ public static class BuiltinRuleProvider
                 ("UncompressedSize", "uint32", 22, 4, null),
                 ("FileNameLen", "uint16", 26, 2, null),
                 ("ExtraLen", "uint16", 28, 2, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule LnkRule() => CreateRule("LNK", "Windows 快捷方式文件结构",
@@ -256,7 +256,7 @@ public static class BuiltinRuleProvider
                 ("IconIndex", "int32", 56, 4, null),
                 ("ShowCommand", "uint32", 60, 4, null),
                 ("Hotkey", "uint16", 64, 2, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule ClassRule() => CreateRule("Java Class", "Java Class 文件结构",
@@ -267,7 +267,7 @@ public static class BuiltinRuleProvider
                 ("MinorVersion", "uint16", 4, 2, "BigEndian"),
                 ("MajorVersion", "uint16", 6, 2, "BigEndian"),
                 ("ConstantPoolCount", "uint16", 8, 2, "BigEndian"),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule MidiRule() => CreateRule("MIDI", "MIDI 文件结构",
@@ -279,16 +279,16 @@ public static class BuiltinRuleProvider
                 ("FormatType", "uint16", 8, 2, null),
                 ("NumTracks", "uint16", 10, 2, null),
                 ("TimeDivision", "uint16", 12, 2, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule FlacRule() => CreateRule("FLAC", "FLAC 音频文件结构",
         [([0x66, 0x4C, 0x61, 0x43], 0, 42)],
         [
-            ("FLAC Marker", [("Marker", "ascii", 0, 4, null)]),
+            ("FLAC Marker", [("Marker", "ascii", 0, 4, null)], false),
             ("STREAMINFO Block Header", [
                 ("MetaBlockHeader", "bytes", 4, 4, null),
-            ]),
+            ], false),
             ("STREAMINFO", [
                 ("MinBlockSize", "uint16", 8, 2, null),
                 ("MaxBlockSize", "uint16", 10, 2, null),
@@ -298,7 +298,7 @@ public static class BuiltinRuleProvider
                 ("NumChannels", "uint8", 22, 1, null),
                 ("BitsPerSample", "uint8", 23, 1, null),
                 ("TotalSamples", "uint64", 24, 8, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule Bzip2Rule() => CreateRule("BZip2", "BZip2 压缩文件结构",
@@ -309,7 +309,7 @@ public static class BuiltinRuleProvider
                 ("ID2", "uint8", 1, 1, null),
                 ("Version", "uint8", 2, 1, null),
                 ("BlockSize", "uint8", 3, 1, null),
-            ]),
+            ], false),
             ("BZip2 Block Header", [
                 ("BlockMagic1", "uint8", 4, 1, null),
                 ("BlockMagic2", "uint8", 5, 1, null),
@@ -318,7 +318,7 @@ public static class BuiltinRuleProvider
                 ("BlockMagic5", "uint8", 8, 1, null),
                 ("BlockMagic6", "uint8", 9, 1, null),
                 ("CRC", "uint32", 10, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule TtfRule() => CreateRule("TTF", "TrueType/OpenType 字体文件结构",
@@ -330,7 +330,7 @@ public static class BuiltinRuleProvider
                 ("searchRange", "uint16", 6, 2, null),
                 ("entrySelector", "uint16", 8, 2, null),
                 ("rangeShift", "uint16", 10, 2, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule OtfRule() => CreateRule("OTF", "OpenType 字体文件结构",
@@ -342,7 +342,7 @@ public static class BuiltinRuleProvider
                 ("searchRange", "uint16", 6, 2, null),
                 ("entrySelector", "uint16", 8, 2, null),
                 ("rangeShift", "uint16", 10, 2, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule Id3v2Rule() => CreateRule("MP3-ID3", "MP3 ID3v2 标签结构 (后续帧位置动态)",
@@ -354,7 +354,7 @@ public static class BuiltinRuleProvider
                 ("VersionMinor", "uint8", 4, 1, null),
                 ("Flags", "uint8", 5, 1, null),
                 ("Size", "bytes", 6, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule TiffRule() => CreateRule("TIFF-LE", "TIFF 图片文件结构 (小端)",
@@ -364,7 +364,7 @@ public static class BuiltinRuleProvider
                 ("ByteOrder", "ascii", 0, 2, null),
                 ("Magic", "uint16", 2, 2, null),
                 ("IFD0Offset", "uint32", 4, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule TiffBeRule() => CreateRule("TIFF-BE", "TIFF 图片文件结构 (大端)",
@@ -374,7 +374,7 @@ public static class BuiltinRuleProvider
                 ("ByteOrder", "ascii", 0, 2, null),
                 ("Magic", "uint16", 2, 2, null),
                 ("IFD0Offset", "uint32", 4, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule IcoRule() => CreateRule("ICO", "ICO 图标文件结构",
@@ -384,7 +384,7 @@ public static class BuiltinRuleProvider
                 ("Reserved", "uint16", 0, 2, null),
                 ("Type", "uint16", 2, 2, null),
                 ("Count", "uint16", 4, 2, null),
-            ]),
+            ], false),
             ("ICONDIRENTRY(1)", [
                 ("Width", "uint8", 6, 1, null),
                 ("Height", "uint8", 7, 1, null),
@@ -394,7 +394,7 @@ public static class BuiltinRuleProvider
                 ("BitCount", "uint16", 12, 2, null),
                 ("BytesInRes", "uint32", 14, 4, null),
                 ("ImageOffset", "uint32", 18, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule SqliteRule() => CreateRule("SQLite", "SQLite 数据库文件结构",
@@ -423,7 +423,7 @@ public static class BuiltinRuleProvider
                 ("AppID", "uint32", 68, 4, null),
                 ("VersionValidFor", "uint32", 92, 4, null),
                 ("SqliteVersion", "uint32", 96, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule TsRule() => CreateRule("MPEG-TS", "MPEG-TS 传输流文件结构",
@@ -433,7 +433,7 @@ public static class BuiltinRuleProvider
                 ("SyncByte", "uint8", 0, 1, null),
                 ("PID_High", "uint16", 1, 2, null),
                 ("Flags_CC", "uint8", 3, 1, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule IsoRule() => CreateRule("ISO", "ISO 9660 光盘映像文件结构",
@@ -454,7 +454,7 @@ public static class BuiltinRuleProvider
                 ("ApplicationIdentifier", "ascii", 0x823E, 128, null),
                 ("CreateDateTime", "ascii", 0x832D, 17, null),
                 ("ModifyDateTime", "ascii", 0x833E, 17, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule RtfRule() => CreateRule("RTF", "RTF 富文本格式文件结构",
@@ -465,7 +465,7 @@ public static class BuiltinRuleProvider
                 ("BackslashRtf", "ascii", 1, 4, null),
                 ("Encoding", "ascii", 5, 2, null),
                 ("Ansicpg", "ascii", 7, 7, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule WoffRule() => CreateRule("WOFF", "WOFF 网页字体结构",
@@ -478,7 +478,7 @@ public static class BuiltinRuleProvider
                 ("NumTables", "uint16", 12, 2, null),
                 ("Reserved", "uint16", 14, 2, null),
                 ("TotalSfntSize", "uint32", 16, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule Woff2Rule() => CreateRule("WOFF2", "WOFF2 网页字体结构",
@@ -491,7 +491,7 @@ public static class BuiltinRuleProvider
                 ("NumTables", "uint16", 12, 2, null),
                 ("Reserved", "uint16", 14, 2, null),
                 ("TotalSfntSize", "uint32", 16, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule Macho32Rule() => CreateRule("Mach-O-32", "Mach-O 可执行文件 (32位)",
@@ -505,7 +505,7 @@ public static class BuiltinRuleProvider
                 ("NumLoadCommands", "uint32", 16, 4, null),
                 ("SizeOfLoadCommands", "uint32", 20, 4, null),
                 ("Flags", "uint32", 24, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule Macho64Rule() => CreateRule("Mach-O-64", "Mach-O 可执行文件 (64位)",
@@ -520,7 +520,7 @@ public static class BuiltinRuleProvider
                 ("SizeOfLoadCommands", "uint32", 20, 4, null),
                 ("Flags", "uint32", 24, 4, null),
                 ("Reserved", "uint32", 28, 4, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule AiffRule() => CreateRule("AIFF", "AIFF 音频文件结构",
@@ -530,7 +530,7 @@ public static class BuiltinRuleProvider
                 ("ChunkID", "ascii", 0, 4, null),
                 ("ChunkSize", "uint32", 4, 4, null),
                 ("Format", "ascii", 8, 4, null),
-            ]),
+            ], false),
             ("Common Chunk", [
                 ("ChunkID", "ascii", 12, 4, null),
                 ("ChunkSize", "uint32", 16, 4, null),
@@ -538,7 +538,7 @@ public static class BuiltinRuleProvider
                 ("NumSampleFrames", "uint32", 22, 4, null),
                 ("SampleSize", "uint16", 26, 2, null),
                 ("SampleRate", "uint80", 28, 10, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule DebRule() => CreateRule("DEB", "Debian 软件包结构",
@@ -546,7 +546,7 @@ public static class BuiltinRuleProvider
         [
             ("ar Archive Header", [
                 ("Magic", "ascii", 0, 8, null),
-            ]),
+            ], false),
             ("debian-binary Entry", [
                 ("FileName", "ascii", 8, 16, null),
                 ("FileModTime", "ascii", 24, 12, null),
@@ -555,7 +555,7 @@ public static class BuiltinRuleProvider
                 ("FileMode", "ascii", 48, 8, null),
                 ("FileSize", "ascii", 56, 10, null),
                 ("TrailingMagic", "ascii", 66, 2, null),
-            ]),
+            ], false),
             ("control.tar.gz Entry", [
                 ("FileName", "ascii", 68, 16, null),
                 ("FileModTime", "ascii", 84, 12, null),
@@ -564,7 +564,7 @@ public static class BuiltinRuleProvider
                 ("FileMode", "ascii", 108, 8, null),
                 ("FileSize", "ascii", 116, 10, null),
                 ("TrailingMagic", "ascii", 126, 2, null),
-            ]),
+            ], false),
         ]);
 
     private static FormatRule Ole2Rule() => CreateRule("OLE2", "OLE2 复合文档 (DOC/XLS/PPT/MSI)",
@@ -572,18 +572,20 @@ public static class BuiltinRuleProvider
         [
             ("OLE2 Header", [
                 ("Magic", "bytes", 0, 8, null),
-                ("CLSID", "bytes", 8, 16, null),
-                ("MinorVersion", "uint16", 24, 2, null),
-                ("MajorVersion", "uint16", 26, 2, null),
-                ("ByteOrder", "uint16", 28, 2, null),
-                ("SectorShift", "uint16", 30, 2, null),
-                ("MiniSectorShift", "uint16", 32, 2, null),
-                ("NumDirectorySectors", "uint32", 40, 4, null),
-                ("NumFATs", "uint32", 44, 4, null),
-                ("FirstDirectorySector", "uint32", 48, 4, null),
-                ("MiniStreamCutoff", "uint32", 56, 4, null),
-                ("FirstMiniFATSector", "uint32", 60, 4, null),
-                ("NumMiniFATs", "uint32", 64, 4, null),
-            ]),
+                ("CLSID", "bytes", -1, 16, null),
+                ("MinorVersion", "uint16", -1, 2, null),
+                ("MajorVersion", "uint16", -1, 2, null),
+                ("ByteOrder", "uint16", -1, 2, null),
+                ("SectorShift", "uint16", -1, 2, null),
+                ("MiniSectorShift", "uint16", -1, 2, null),
+                ("Reserved", "bytes", -1, 6, null),
+                ("NumDirectorySectors", "uint32", -1, 4, null),
+                ("NumFATs", "uint32", -1, 4, null),
+                ("FirstDirectorySector", "uint32", -1, 4, null),
+                ("TransactionSig", "uint32", -1, 4, null),
+                ("MiniStreamCutoff", "uint32", -1, 4, null),
+                ("FirstMiniFATSector", "uint32", -1, 4, null),
+                ("NumMiniFATs", "uint32", -1, 4, null),
+            ], true),
         ]);
 }

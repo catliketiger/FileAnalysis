@@ -25,6 +25,7 @@ public class FormatStructure
 {
     public string Name { get; set; } = "";
     public string Type { get; set; } = "struct";
+    public bool Sequential { get; set; }
     public List<FormatField> Fields { get; set; } = new();
 }
 

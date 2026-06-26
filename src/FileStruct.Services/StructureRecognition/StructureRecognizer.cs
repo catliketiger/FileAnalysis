@@ -97,10 +97,29 @@ public class StructureRecognizer : IStructureRecognizer
                         Source = StructureNodeSource.AutoDetected,
                     };
 
+                    // sequential 模式：字段在结构中按顺序排列，偏移自动累加
+                    var structBaseOffset = baseOffset;
+                    long currentPos = structBaseOffset;
+
                     foreach (var fieldDef in structDef.Fields)
                     {
-                        // 所有偏移都相对于 baseOffset（非 PE 格式 baseOffset = 0）
-                        var realOffset = fieldDef.Offset + baseOffset;
+                        long realOffset;
+                        if (structDef.Sequential && fieldDef.Offset < 0)
+                        {
+                            // 顺序排列：使用当前位置
+                            realOffset = currentPos;
+                        }
+                        else
+                        {
+                            // 显式偏移：baseOffset 偏移（非 PE 格式 baseOffset = 0）
+                            realOffset = fieldDef.Offset + baseOffset;
+                            if (structDef.Sequential)
+                                currentPos = realOffset; // 覆盖序列位置
+                        }
+
+                        var fieldLen = fieldDef.Length ?? GuessFieldLength(fieldDef.Type);
+                        if (structDef.Sequential)
+                            currentPos += fieldLen; // 始终推进
                         var fieldNode = new StructureNode
                         {
                             Name = fieldDef.Name,
