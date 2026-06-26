@@ -52,6 +52,9 @@ public class FileDefaultsConfig
 
     /// <summary>默认字节序</summary>
     public string DefaultEndianness { get; set; } = "LittleEndian";
+
+    /// <summary>默认解码类型（Auto / Hex / Integer / Float / String）</summary>
+    public string DefaultDecodeType { get; set; } = "Auto";
 }
 
 /// <summary>
@@ -68,11 +71,26 @@ public class UiConfig
     /// <summary>窗口默认高度</summary>
     public double WindowHeight { get; set; } = 900;
 
+    /// <summary>窗口左侧位置（-1 表示未设置，居中显示）</summary>
+    public double WindowLeft { get; set; } = -1;
+
+    /// <summary>窗口顶部位置（-1 表示未设置，居中显示）</summary>
+    public double WindowTop { get; set; } = -1;
+
+    /// <summary>窗口状态（Normal / Maximized / Minimized）</summary>
+    public string WindowState { get; set; } = "Normal";
+
     /// <summary>十六进制视图字体</summary>
     public string FontFamily { get; set; } = "Cascadia Code";
 
     /// <summary>十六进制视图字号</summary>
     public int FontSize { get; set; } = 13;
+
+    /// <summary>强调色（十六进制，如 "#1976D2"）</summary>
+    public string AccentColor { get; set; } = "#1976D2";
+
+    /// <summary>布局状态 JSON（面板宽度、可见性等）</summary>
+    public string LayoutState { get; set; } = "";
 }
 
 /// <summary>

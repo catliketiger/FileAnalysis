@@ -26,6 +26,18 @@ public class ConfigFileStore
     }
 
     /// <summary>
+    /// 使用自定义用户设置路径（用于测试隔离）
+    /// </summary>
+    public ConfigFileStore(string userSettingsPath)
+    {
+        _appSettingsPath = Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+        _userSettingsPath = userSettingsPath;
+        var dir = Path.GetDirectoryName(_userSettingsPath);
+        if (dir != null) Directory.CreateDirectory(dir);
+    }
+
+    /// <summary>
     /// 读取配置：合并内置配置和用户覆盖
     /// </summary>
     public AppConfig LoadConfig()
@@ -82,9 +94,22 @@ public class ConfigFileStore
             target.UI.WindowWidth = source.UI.WindowWidth;
         if (source.UI.WindowHeight != new UiConfig().WindowHeight)
             target.UI.WindowHeight = source.UI.WindowHeight;
+        if (source.UI.WindowLeft != new UiConfig().WindowLeft)
+            target.UI.WindowLeft = source.UI.WindowLeft;
+        if (source.UI.WindowTop != new UiConfig().WindowTop)
+            target.UI.WindowTop = source.UI.WindowTop;
+        if (source.UI.WindowState != new UiConfig().WindowState)
+            target.UI.WindowState = source.UI.WindowState;
         if (source.UI.FontFamily != null)
             target.UI.FontFamily = source.UI.FontFamily;
         if (source.UI.FontSize != new UiConfig().FontSize)
             target.UI.FontSize = source.UI.FontSize;
+        if (source.UI.AccentColor != new UiConfig().AccentColor)
+            target.UI.AccentColor = source.UI.AccentColor;
+        if (source.UI.LayoutState != new UiConfig().LayoutState)
+            target.UI.LayoutState = source.UI.LayoutState;
+
+        if (source.FileDefaults.DefaultDecodeType != new FileDefaultsConfig().DefaultDecodeType)
+            target.FileDefaults.DefaultDecodeType = source.FileDefaults.DefaultDecodeType;
     }
 }

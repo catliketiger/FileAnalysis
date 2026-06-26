@@ -12,6 +12,9 @@ public interface IConfigService
     /// </summary>
     AppConfig GetConfig();
 
+    /// <summary>配置变更事件，更新后触发</summary>
+    event Action<AppConfig>? ConfigChanged;
+
     /// <summary>
     /// 更新配置并持久化
     /// </summary>
