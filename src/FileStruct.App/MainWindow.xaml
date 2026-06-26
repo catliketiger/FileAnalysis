@@ -84,10 +84,10 @@
             <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                      Width="120" VerticalAlignment="Center">
                 <TextBox.InputBindings>
-                    <KeyBinding Key="Enter" Command="{Binding SearchBytesAsyncCommand}"/>
+                    <KeyBinding Key="Enter" Command="{Binding SearchBytesCommand}"/>
                 </TextBox.InputBindings>
             </TextBox>
-            <Button Content="搜" Command="{Binding SearchBytesAsyncCommand}" VerticalAlignment="Center"/>
+            <Button Content="搜" Command="{Binding SearchBytesCommand}" VerticalAlignment="Center"/>
             <Button Content="▶" Command="{Binding NextSearchResultCommand}" VerticalAlignment="Center" Width="22"/>
             <TextBlock Text="{Binding SearchResultText}" VerticalAlignment="Center" Margin="4,0" FontSize="11" Foreground="Gray"/>
         </ToolBar>
