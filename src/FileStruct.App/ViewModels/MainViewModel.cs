@@ -326,13 +326,23 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void GoToOffset()
     {
-        if (_buffer == null || string.IsNullOrWhiteSpace(GotoOffsetText)) return;
+        if (_buffer == null) return;
+
+        // 从菜单调用时输入框可能为空，弹窗提示输入
+        var inputText = GotoOffsetText;
+        if (string.IsNullOrWhiteSpace(inputText))
+        {
+            inputText = Microsoft.VisualBasic.Interaction.InputBox(
+                "请输入偏移地址\n支持十进制 (1024) 或十六进制 (0x400)",
+                "跳转到偏移", "0x");
+            if (string.IsNullOrWhiteSpace(inputText)) return;
+        }
 
         try
         {
-            var offset = GotoOffsetText.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
-                ? Convert.ToInt64(GotoOffsetText, 16)
-                : long.Parse(GotoOffsetText);
+            var offset = inputText.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                ? Convert.ToInt64(inputText, 16)
+                : long.Parse(inputText);
 
             if (offset < 0 || offset >= _buffer.Length)
             {
@@ -348,7 +358,7 @@ public partial class MainViewModel : ObservableObject
         }
         catch (FormatException)
         {
-            StatusText = $"无效的偏移格式: {GotoOffsetText} (支持十进制或 0x 十六进制)";
+            StatusText = $"无效的偏移格式: {inputText} (支持十进制或 0x 十六进制)";
         }
     }
 
