@@ -14,6 +14,7 @@ public class ProjectSerializer
     {
         WriteIndented = true,
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
     };
 
     /// <summary>
