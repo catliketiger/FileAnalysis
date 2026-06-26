@@ -46,10 +46,9 @@ public partial class App : Application
         services.AddSingleton<IProjectService, ProjectService>();
         services.AddSingleton<IConfigService, ConfigService>();
 
-        // 加载内置规则
-        var ruleLoader = new BuiltinRuleLoader();
-        var builtinRules = ruleLoader.LoadAll();
-        logService.Info($"已加载 {builtinRules.Count} 个内置格式规则");
+        // 加载内置格式规则
+        var builtinRules = BuiltinRuleProvider.GetAll();
+        logService.Info($"已加载 {builtinRules.Count} 个内置格式规则: {string.Join(", ", builtinRules.Select(r => r.Format))}");
 
         // V1.0 规则引擎 + 识别引擎
         services.AddSingleton<IRuleEngine, RuleEngine>(sp =>
