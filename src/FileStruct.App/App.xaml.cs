@@ -1,4 +1,6 @@
+using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Windows;
 using FileStruct.Core.Interfaces;
 using FileStruct.Infrastructure.Configuration;
@@ -50,6 +52,13 @@ public partial class App : Application
         var builtinRules = BuiltinRuleProvider.GetAll();
         logService.Info($"已加载 {builtinRules.Count} 个内置格式规则: {string.Join(", ", builtinRules.Select(r => r.Format))}");
 
+        // DEBUG 模式：导出规则文件到 Rules 目录便于核对
+        if (config.Debug.Enabled)
+        {
+            var rulesDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Rules");
+            ExportRules(builtinRules, rulesDir, logService);
+        }
+
         // V1.0 规则引擎 + 识别引擎
         services.AddSingleton<IRuleEngine, RuleEngine>(sp =>
         {
@@ -79,5 +88,29 @@ public partial class App : Application
             DataContext = Services.GetRequiredService<MainViewModel>()
         };
         mainWindow.Show();
+    }
+
+    /// <summary>将内置规则导出为 JSON 文件到指定目录</summary>
+    private static void ExportRules(List<FileStruct.Core.Models.FormatRule> rules, string dir, ILogService log)
+    {
+        try
+        {
+            Directory.CreateDirectory(dir);
+            var opts = new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+            foreach (var rule in rules)
+            {
+                var fileName = $"{rule.Format.ToLowerInvariant().Replace(" ", "-").Replace("/", "-")}.json";
+                if (fileName == "midi-track.json") continue;
+                var path = Path.Combine(dir, fileName);
+                var json = JsonSerializer.Serialize(rule, opts);
+                File.WriteAllText(path, json);
+                log.Debug($"规则导出: {path}");
+            }
+            log.Info($"规则文件已导出到: {dir}");
+        }
+        catch (Exception ex)
+        {
+            log.Error($"规则导出失败", ex);
+        }
     }
 }
