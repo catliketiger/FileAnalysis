@@ -109,30 +109,32 @@ public class ProjectSerializerTests
         format.AddChild(width);
         root.AddChild(format);
 
+        // 使用 DTO 保存
         var project = new ProjectFile
         {
             SourceFile = new SourceFileInfo { FileName = "test.bmp", FileSize = 100 },
-            StructureRoot = root,
+            StructureRoot = StructureNodeData.FromNode(root),
         };
 
         var json = _serializer.Serialize(project);
         Assert.NotNull(json);
         Assert.Contains("文件根", json);
-        Assert.Contains("BMP", json);
 
         var deserialized = _serializer.Deserialize(json);
         Assert.NotNull(deserialized.StructureRoot);
         Assert.Equal("文件根", deserialized.StructureRoot.Name);
         Assert.Single(deserialized.StructureRoot.Children);
         Assert.Equal("BMP", deserialized.StructureRoot.Children[0].Name);
-        Assert.Equal(2, deserialized.StructureRoot.Children[0].Children.Count);
-        Assert.Equal("Magic", deserialized.StructureRoot.Children[0].Children[0].Name);
-        Assert.Null(deserialized.StructureRoot.Children[0].Parent); // Parent was [JsonIgnore]
 
-        // 重建父引用
-        deserialized.StructureRoot.RebuildParentReferences();
-        Assert.NotNull(deserialized.StructureRoot.Children[0].Parent);
-        Assert.Same(deserialized.StructureRoot, deserialized.StructureRoot.Children[0].Parent);
+        // 还原为 StructureNode
+        var restoredRoot = deserialized.StructureRoot.ToNode();
+        Assert.Equal("文件根", restoredRoot.Name);
+        Assert.Single(restoredRoot.Children);
+        Assert.Equal("BMP", restoredRoot.Children[0].Name);
+        Assert.Equal(2, restoredRoot.Children[0].Children.Count);
+        Assert.Equal("Magic", restoredRoot.Children[0].Children[0].Name);
+        Assert.NotNull(restoredRoot.Children[0].Parent);
+        Assert.Same(restoredRoot, restoredRoot.Children[0].Parent);
     }
 
     [Fact]

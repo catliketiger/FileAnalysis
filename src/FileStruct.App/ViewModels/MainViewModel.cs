@@ -168,7 +168,8 @@ public partial class MainViewModel : ObservableObject
                     ScrollOffset = HexEditor.ScrollOffset,
                     ByteGroupSize = HexEditor.ByteGroupSize,
                 },
-                StructureRoot = StructureTree.RootNode,
+                StructureRoot = StructureTree.RootNode != null
+                    ? StructureNodeData.FromNode(StructureTree.RootNode) : null,
             };
             await _projectService.SaveAsync(project, dialog.FileName);
             StatusText = "项目已保存";
@@ -224,8 +225,8 @@ public partial class MainViewModel : ObservableObject
                 {
                     try
                     {
-                        project.StructureRoot.RebuildParentReferences();
-                        StructureTree.LoadTree(project.StructureRoot);
+                        var root = project.StructureRoot.ToNode();
+                        StructureTree.LoadTree(root);
                     }
                     catch (Exception ex)
                     {

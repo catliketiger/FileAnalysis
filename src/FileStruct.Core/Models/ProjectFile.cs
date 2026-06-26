@@ -29,8 +29,8 @@ public class ProjectFile
     /// <summary>用户备注列表</summary>
     public List<UserNote> Notes { get; set; } = new();
 
-    /// <summary>结构树根节点（识别出的结构字段）</summary>
-    public StructureNode? StructureRoot { get; set; }
+    /// <summary>结构树根节点（识别出的结构字段，DTO 形式避免递归序列化问题）</summary>
+    public StructureNodeData? StructureRoot { get; set; }
 }
 
 /// <summary>
