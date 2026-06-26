@@ -3,8 +3,10 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FileStruct.App.Controls;
+using FileStruct.App.Services;
 using FileStruct.Core.Interfaces;
 using FileStruct.Core.Models;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FileStruct.App.ViewModels;
 
@@ -507,7 +509,8 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ShowSettings()
     {
-        var win = new Views.SettingsWindow(this);
+        var vm = App.Services.GetRequiredService<SettingsViewModel>();
+        var win = new Views.SettingsWindow(vm);
         win.ShowDialog();
     }
 
