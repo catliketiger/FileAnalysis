@@ -11,5 +11,7 @@ public class FileLoadException : FileStructException
         : base(message, inner!)
     {
         FilePath = filePath;
+        UserAction = "请检查文件路径是否正确，以及是否有读取权限";
+        ContextInfo["FilePath"] = filePath;
     }
 }

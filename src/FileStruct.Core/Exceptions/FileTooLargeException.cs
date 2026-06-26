@@ -15,5 +15,8 @@ public class FileTooLargeException : FileStructException
     {
         FileSize = fileSize;
         MaxSize = maxSize;
+        UserAction = "请选择小于 200MB 的文件，或在设置中调整最大文件大小";
+        ContextInfo["FileSize"] = fileSize;
+        ContextInfo["MaxSize"] = maxSize;
     }
 }

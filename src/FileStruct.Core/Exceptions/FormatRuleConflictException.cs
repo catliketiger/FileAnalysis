@@ -10,5 +10,9 @@ public class FormatRuleConflictException : FileStructException
     {
         RuleName = ruleName;
         ExistingRuleName = existingRuleName;
+        UserAction = "请检查导入的规则文件是否与现有规则重复，或手动选择冲突解决方案（保留/替换/跳过）";
+        ContextInfo["NewRule"] = ruleName;
+        ContextInfo["ExistingRule"] = existingRuleName;
+        ContextInfo["Detail"] = detail;
     }
 }

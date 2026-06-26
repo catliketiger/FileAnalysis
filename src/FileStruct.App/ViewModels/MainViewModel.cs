@@ -139,7 +139,9 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            var userAction = (ex as FileStruct.Core.Exceptions.FileStructException)?.UserAction;
             StatusText = $"加载失败: {ex.Message}";
+            if (userAction != null) StatusText += $" — {userAction}";
             _logger.Error($"打开文件失败", ex);
         }
     }
@@ -184,7 +186,9 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            var userAction = (ex as FileStruct.Core.Exceptions.FileStructException)?.UserAction;
             StatusText = $"保存失败: {ex.Message}";
+            if (userAction != null) StatusText += $" — {userAction}";
             _logger.Error($"保存项目失败", ex);
         }
     }
@@ -261,7 +265,9 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            var userAction = (ex as FileStruct.Core.Exceptions.FileStructException)?.UserAction;
             StatusText = $"打开项目失败: {ex.Message}";
+            if (userAction != null) StatusText += $" — {userAction}";
             _logger.Error($"打开项目失败", ex);
         }
     }
@@ -545,7 +551,9 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            var userAction = (ex as FileStruct.Core.Exceptions.FileStructException)?.UserAction;
             StatusText = $"识别失败: {ex.Message}";
+            if (userAction != null) StatusText += $" — {userAction}";
             _logger.Error("结构识别失败", ex);
         }
         finally

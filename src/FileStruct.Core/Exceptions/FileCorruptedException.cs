@@ -11,5 +11,7 @@ public class FileCorruptedException : FileStructException
         : base(message, inner!)
     {
         FilePath = filePath;
+        UserAction = "文件可能已损坏或不完整，请尝试重新下载或获取源文件";
+        ContextInfo["FilePath"] = filePath;
     }
 }
