@@ -162,6 +162,11 @@ public class FileTypeDetector : IFileTypeDetector
         [".odp"] = (FileCategory.Document, "OpenDocument 演示", "application/vnd.oasis.opendocument.presentation"),
         [".rtf"] = (FileCategory.Document, "RTF 文档", "application/rtf"),
 
+        // ═══ 数据库 ═══
+        [".db"] = (FileCategory.Binary, "SQLite 数据库", "application/x-sqlite3"),
+        [".sqlite"] = (FileCategory.Binary, "SQLite 数据库", "application/x-sqlite3"),
+        [".sqlite3"] = (FileCategory.Binary, "SQLite 数据库", "application/x-sqlite3"),
+
         // ═══ CAD 专用 ═══
         [".dwg"] = (FileCategory.Binary, "AutoCAD 图纸", "application/acad"),
         [".dxf"] = (FileCategory.Binary, "DXF 交换文件", "image/vnd.dxf"),
@@ -256,6 +261,9 @@ public class FileTypeDetector : IFileTypeDetector
         ([0x76, 0x68, 0x64, 0x78, 0x66, 0x69, 0x6C, 0x65], 0, FileCategory.Binary, "VHDX 虚拟磁盘", "application/x-vhd"),
         ([0x51, 0x46, 0x49, 0xFB], 0, FileCategory.Binary, "QCOW2 磁盘映像", "application/x-qemu-disk"),
         ([0x43, 0x44, 0x30, 0x30, 0x31], 0x8001, FileCategory.Binary, "ISO 9660 光盘映像", "application/x-iso9660-image"),
+
+        // 数据库
+        ([0x53, 0x51, 0x4C, 0x69, 0x74, 0x65, 0x20, 0x66, 0x6F, 0x72, 0x6D, 0x61, 0x74, 0x20, 0x33, 0x00], 0, FileCategory.Binary, "SQLite 数据库", "application/x-sqlite3"),
 
         // 快捷方式
         ([0x4C, 0x00, 0x00, 0x00, 0x01, 0x14, 0x02, 0x00], 0, FileCategory.Binary, "Windows 快捷方式", "application/x-ms-shortcut"),

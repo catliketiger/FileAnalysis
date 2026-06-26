@@ -28,6 +28,7 @@ public static class BuiltinRuleProvider
         TiffRule(),
         TiffBeRule(),
         IcoRule(),
+        SqliteRule(),
         RtfRule(),
         WoffRule(),
         Woff2Rule(),
@@ -391,6 +392,35 @@ public static class BuiltinRuleProvider
                 ("BitCount", "uint16", 12, 2, null),
                 ("BytesInRes", "uint32", 14, 4, null),
                 ("ImageOffset", "uint32", 18, 4, null),
+            ]),
+        ]);
+
+    private static FormatRule SqliteRule() => CreateRule("SQLite", "SQLite 数据库文件结构",
+        [([0x53, 0x51, 0x4C, 0x69, 0x74, 0x65, 0x20, 0x66, 0x6F, 0x72, 0x6D, 0x61, 0x74, 0x20, 0x33, 0x00], 0, 100)],
+        [
+            ("SQLite Database Header", [
+                ("Magic", "ascii", 0, 16, null),
+                ("PageSize", "uint16", 16, 2, null),
+                ("WriteVer", "uint8", 18, 1, null),
+                ("ReadVer", "uint8", 19, 1, null),
+                ("ReservedSpace", "uint8", 20, 1, null),
+                ("MaxPayloadFrac", "uint8", 21, 1, null),
+                ("MinPayloadFrac", "uint8", 22, 1, null),
+                ("LeafPayloadFrac", "uint8", 23, 1, null),
+                ("FileChangeCounter", "uint32", 24, 4, null),
+                ("DbSizeInPages", "uint32", 28, 4, null),
+                ("FirstFreelistPage", "uint32", 32, 4, null),
+                ("TotalFreelistPages", "uint32", 36, 4, null),
+                ("SchemaCookie", "uint32", 40, 4, null),
+                ("SchemaFormat", "uint32", 44, 4, null),
+                ("DefaultCacheSize", "uint32", 48, 4, null),
+                ("LargestRootPage", "uint32", 52, 4, null),
+                ("TextEncoding", "uint32", 56, 4, null),
+                ("UserVersion", "uint32", 60, 4, null),
+                ("IncrVacuumMode", "uint32", 64, 4, null),
+                ("AppID", "uint32", 68, 4, null),
+                ("VersionValidFor", "uint32", 92, 4, null),
+                ("SqliteVersion", "uint32", 96, 4, null),
             ]),
         ]);
 
