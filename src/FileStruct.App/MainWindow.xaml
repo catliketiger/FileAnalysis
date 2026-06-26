@@ -53,8 +53,8 @@
             <MenuItem Header="视图(_V)">
                 <MenuItem Header="结构识别(_R)" Command="{Binding RecognizeCommand}"/>
                 <Separator/>
-                <MenuItem Header="十六进制视图" IsCheckable="True"/>
-                <MenuItem Header="文本视图" IsCheckable="True"/>
+                <MenuItem Header="十六进制视图" Command="{Binding SwitchToHexCommand}"/>
+                <MenuItem Header="文本视图" Command="{Binding SwitchToTextCommand}"/>
             </MenuItem>
             <MenuItem Header="工具(_T)">
                 <MenuItem Header="设置(_S)" Command="{Binding ShowSettingsCommand}"/>

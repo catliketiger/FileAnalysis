@@ -259,6 +259,12 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void SwitchToHex() => SelectedTabIndex = 0;
+
+    [RelayCommand]
+    private void SwitchToText() => SelectedTabIndex = 1;
+
+    [RelayCommand]
     private void Exit()
     {
         CloseFile();
