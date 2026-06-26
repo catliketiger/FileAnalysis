@@ -46,6 +46,7 @@ public static class BuiltinRuleProvider
         OggRule(),
         Mp4Rule(),
         JpgRule(),
+        MkvRule(),
     ];
 
     private static FormatRule CreateRule(string format, string desc,
@@ -707,4 +708,20 @@ public static class BuiltinRuleProvider
                 ("Data", "bytes", 20, 0x100000, null),
             ], false),
         ]);
+
+    private static FormatRule MkvRule()
+    {
+        var rule = CreateRule("MKV", "MKV/WebM 媒体容器 (Matroska EBML)",
+            [([0x1A, 0x45, 0xDF, 0xA3], 0, 4)],
+            [
+                ("EBML Header", [
+                    ("EBML ID", "bytes", 0, 4, null),
+                    ("HeaderContent", "bytes", 4, 0x40, null),
+                ], false),
+                ("Content", [
+                    ("Data", "bytes", 0x44, 0x100000, null),
+                ], false),
+            ]);
+        return rule;
+    }
 }
