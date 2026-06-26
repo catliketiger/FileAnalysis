@@ -110,9 +110,6 @@ public class HexView : Control
     /// <summary>行数据源（供虚拟化 ItemsControl 使用）</summary>
     public HexRowList? RowList { get; private set; }
 
-    /// <summary>导航进行中标志：SetSelection 触发 OnSelectionChanged 时不立即更新高亮</summary>
-    private bool _navigating;
-
     #endregion
 
     #region 方法
@@ -157,9 +154,7 @@ public class HexView : Control
     {
         SelectionStart = Selection.HasSelection ? Math.Min(args.StartOffset, args.EndOffset) : -1;
         SelectionEnd = Selection.HasSelection ? Math.Max(args.StartOffset, args.EndOffset) : -1;
-        // 导航中跳过：NavigateTo 会在滚动+容器生成后用 InvokeAsync 统一刷新高亮
-        if (!_navigating)
-            UpdateRowHighlights();
+        UpdateRowHighlights();
     }
 
     private bool _isDragging;
@@ -400,13 +395,18 @@ public class HexView : Control
     {
         if (Buffer == null || RowList == null) return;
 
-        _navigating = true;
+        var selEnd = length > 1 ? offset + length - 1 : offset;
+
+        // 临时退订事件，避免滚动前触发高亮（会和目标位置不一致）
+        Selection.SelectionChanged -= OnSelectionChanged;
         try
         {
-            // 原子设置选中区间（触发 OnSelectionChanged 但跳过 UpdateRowHighlights）
-            Selection.SetSelection(offset, length > 1 ? offset + length - 1 : offset);
+            Selection.SetSelection(offset, selEnd);
+            // 直接设 DP，后续 UpdateRowHighlights 读取这些值
+            SelectionStart = Math.Min(offset, selEnd);
+            SelectionEnd = Math.Max(offset, selEnd);
 
-            // 居中显示
+            // 居中滚动
             var listBox = GetTemplateChild("PART_ListBox") as ListBox;
             var sv = FindVisualChild<ScrollViewer>(listBox);
             if (sv != null)
@@ -419,10 +419,10 @@ public class HexView : Control
         }
         finally
         {
-            _navigating = false;
+            Selection.SelectionChanged += OnSelectionChanged;
         }
 
-        // 延迟到 Loaded 优先级：等 WPF 完成滚动+容器重新生成后再刷新高亮
+        // 等容器生成完毕后刷新高亮
         Dispatcher.InvokeAsync(UpdateRowHighlights, System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
