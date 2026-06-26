@@ -29,6 +29,7 @@ public static class BuiltinRuleProvider
         TiffBeRule(),
         IcoRule(),
         SqliteRule(),
+        IsoRule(),
         RtfRule(),
         WoffRule(),
         Woff2Rule(),
@@ -421,6 +422,27 @@ public static class BuiltinRuleProvider
                 ("AppID", "uint32", 68, 4, null),
                 ("VersionValidFor", "uint32", 92, 4, null),
                 ("SqliteVersion", "uint32", 96, 4, null),
+            ]),
+        ]);
+
+    private static FormatRule IsoRule() => CreateRule("ISO", "ISO 9660 光盘映像文件结构",
+        [([0x43, 0x44, 0x30, 0x30, 0x31], 0x8001, 8831)],
+        [
+            ("Primary Volume Descriptor", [
+                ("TypeCode", "uint8", 0x8000, 1, null),
+                ("Identifier", "ascii", 0x8001, 5, null),
+                ("Version", "uint8", 0x8006, 1, null),
+                ("SystemIdentifier", "ascii", 0x8008, 32, null),
+                ("VolumeIdentifier", "ascii", 0x8028, 32, null),
+                ("VolumeSpaceSize", "uint32", 0x8050, 8, null),
+                ("LogicalBlockSize", "uint32", 0x8080, 4, null),
+                ("RootDirRecord", "bytes", 0x809C, 34, null),
+                ("VolumeSetIdentifier", "ascii", 0x80BE, 128, null),
+                ("PublisherIdentifier", "ascii", 0x813E, 128, null),
+                ("DataPreparerIdentifier", "ascii", 0x81BE, 128, null),
+                ("ApplicationIdentifier", "ascii", 0x823E, 128, null),
+                ("CreateDateTime", "ascii", 0x832D, 17, null),
+                ("ModifyDateTime", "ascii", 0x833E, 17, null),
             ]),
         ]);
 

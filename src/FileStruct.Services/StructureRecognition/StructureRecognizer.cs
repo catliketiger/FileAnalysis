@@ -52,7 +52,8 @@ public class StructureRecognizer : IStructureRecognizer
         _logger.Debug("Stage 1: 魔数匹配");
         progress?.Report(new RecognitionProgress(15, "正在进行魔数匹配..."));
 
-        var headerSize = (int)Math.Min(buffer.Length, 1024);
+        // 读取足够大的头部用于魔数匹配（覆盖ISO@0x8001等远偏移签名）
+        var headerSize = (int)Math.Min(buffer.Length, 65536);
         var headerBytes = buffer.ReadBytes(0, headerSize);
         var signatureMatches = _signatureMatcher.Match(headerBytes);
 

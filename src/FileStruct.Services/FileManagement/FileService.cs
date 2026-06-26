@@ -51,7 +51,7 @@ public class FileService : IFileService
 
     public FileTypeInfo DetectFileType(BinaryBuffer buffer)
     {
-        var header = buffer.ReadBytes(0, (int)Math.Min(16, buffer.Length));
+        var header = buffer.ReadBytes(0, (int)Math.Min(65536, buffer.Length));
         return _typeDetector.Detect(buffer.FilePath, header);
     }
 
