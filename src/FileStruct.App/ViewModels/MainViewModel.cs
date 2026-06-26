@@ -406,16 +406,17 @@ public partial class MainViewModel : ObservableObject
         StatusText = $"已添加书签: {name}";
     }
 
+    private CancellationTokenSource? _searchCts;
     private List<long> _searchResults = [];
     private int _searchResultIndex = -1;
     private int _searchPatternLength;
 
     [RelayCommand]
-    private void SearchBytes()
+    private async Task SearchBytesAsync()
     {
         if (_buffer == null || string.IsNullOrWhiteSpace(SearchText)) return;
 
-        // 解析搜索模式：支持十六进制 ("48 65 6C") 或 ASCII 文本 (用引号包裹)
+        // 解析搜索模式
         byte[] pattern;
         if (SearchText.StartsWith('"') && SearchText.EndsWith('"'))
         {
@@ -432,39 +433,67 @@ public partial class MainViewModel : ObservableObject
         if (pattern.Length == 0) { SearchResultText = "搜索内容为空"; return; }
 
         _searchPatternLength = pattern.Length;
-
-        // 滑动窗口搜索
         _searchResults.Clear();
         _searchResultIndex = -1;
 
+        // 取消前一次搜索
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        var ct = _searchCts.Token;
+
+        StatusText = "正在搜索...";
         var buffer = _buffer;
-        for (long offset = 0; offset <= buffer.Length - pattern.Length; offset++)
+        var patternLen = pattern.Length;
+        var patternCopy = (byte[])pattern.Clone();
+
+        try
         {
-            var match = true;
-            for (int i = 0; i < pattern.Length; i++)
+            var results = await Task.Run(() =>
             {
-                if (buffer.ReadByte(offset + i) != pattern[i])
+                var localResults = new List<long>();
+                for (long offset = 0; offset <= buffer.Length - patternLen; offset++)
                 {
-                    match = false;
-                    break;
+                    ct.ThrowIfCancellationRequested();
+
+                    var match = true;
+                    for (int i = 0; i < patternLen; i++)
+                    {
+                        if (buffer.ReadByte(offset + i) != patternCopy[i])
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+                    if (match)
+                    {
+                        localResults.Add(offset);
+                        if (localResults.Count >= 1000) break;
+                    }
                 }
-            }
-            if (match)
+                return localResults;
+            }, ct);
+
+            _searchResults = results;
+
+            if (_searchResults.Count == 0)
             {
-                _searchResults.Add(offset);
-                // 限制结果数量防止卡顿
-                if (_searchResults.Count >= 1000) break;
+                StatusText = "搜索完成: 未找到匹配";
+                SearchResultText = "未找到匹配";
+                return;
             }
-        }
 
-        if (_searchResults.Count == 0)
+            _searchResultIndex = 0;
+            JumpToSearchResult();
+        }
+        catch (OperationCanceledException)
         {
-            SearchResultText = "未找到匹配";
-            return;
+            StatusText = "搜索已取消";
         }
-
-        _searchResultIndex = 0;
-        JumpToSearchResult();
+        catch (Exception ex)
+        {
+            StatusText = $"搜索失败: {ex.Message}";
+            _logger.Error("字节搜索失败", ex);
+        }
     }
 
     [RelayCommand]
@@ -573,6 +602,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (bytes < 1024) return $"{bytes} B";
         if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
-        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+        if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024.0):F1} MB";
+        return $"{bytes / (1024.0 * 1024.0 * 1024.0):F1} GB";
     }
 }

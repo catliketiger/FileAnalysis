@@ -17,20 +17,21 @@ public class FileService : IFileService
         _logger = logger;
     }
 
-    public Task<BinaryBuffer> LoadFileAsync(string filePath, CancellationToken cancellationToken = default)
+    public async Task<BinaryBuffer> LoadFileAsync(string filePath, CancellationToken cancellationToken = default)
     {
-        using var op = _logger.BeginOperation($"加载文件: {filePath}");
-
         _logger.Debug($"开始加载文件: {filePath}");
 
-        cancellationToken.ThrowIfCancellationRequested();
+        // 后台线程执行文件加载（MMF创建+类型检测），不阻塞 UI
+        var buffer = await Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var buf = BinaryBuffer.LoadFromFile(filePath);
+            var fileType = DetectFileType(buf);
+            _logger.Info($"文件已加载: {buf.FileName}, 大小: {buf.Length:N0} 字节, 类型: {fileType.DisplayName}");
+            return buf;
+        }, cancellationToken).ConfigureAwait(false);
 
-        var buffer = BinaryBuffer.LoadFromFile(filePath);
-
-        var fileType = DetectFileType(buffer);
-        _logger.Info($"文件已加载: {buffer.FileName}, 大小: {buffer.Length:N0} 字节, 类型: {fileType.DisplayName}");
-
-        return Task.FromResult(buffer);
+        return buffer;
     }
 
     public FileTypeInfo DetectFileType(string filePath)
