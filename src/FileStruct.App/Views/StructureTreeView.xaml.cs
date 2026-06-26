@@ -18,10 +18,6 @@ public partial class StructureTreeView : UserControl
         if (e.NewValue is TreeItemViewModel item &&
             DataContext is MainViewModel mainVm)
         {
-            // 清除 VM 中旧的选中状态，设置新的
-            StructureTreeViewModel.ClearAllSelection(mainVm.StructureTree.RootItems);
-            item.IsSelected = true;
-
             var node = item.Node;
             mainVm.StructureTree.SelectedNode = node;
             // 使用 NavigateToOffset 实现居中 + 高亮
@@ -43,19 +39,8 @@ public partial class StructureTreeView : UserControl
             if (found)
             {
                 mainVm.StatusText = $"已定位到字段: {text}";
-                var matchedNode = mainVm.StructureTree.SelectedNode;
-                if (matchedNode != null)
-                {
-                    mainVm.HexEditor.NavigateToOffset = matchedNode.Offset;
-                    mainVm.HexEditor.NavigateToLength = (int)Math.Max(1, matchedNode.Length);
-                    mainVm.HexEditor.SelectionInfo = $"字段: {matchedNode.Name} @ 0x{matchedNode.Offset:X}";
-                }
-                // 滚动 TreeView 到选中项
-                if (StructTree.ItemContainerGenerator.ContainerFromItem(
-                    StructTree.SelectedItem) is TreeViewItem tvi)
-                {
-                    tvi.BringIntoView();
-                }
+                // SearchTree 设置了 found.IsSelected = true，TreeView 绑定自动触发
+                // OnSelectedItemChanged 处理 Hex 导航和状态更新
             }
             else
             {
