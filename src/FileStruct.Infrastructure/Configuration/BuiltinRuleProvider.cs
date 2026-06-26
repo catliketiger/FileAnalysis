@@ -19,6 +19,14 @@ public static class BuiltinRuleProvider
         ZipRule(),
         LnkRule(),
         ClassRule(),
+        MidiRule(),
+        FlacRule(),
+        Bzip2Rule(),
+        TtfRule(),
+        OtfRule(),
+        Id3v2Rule(),
+        TiffRule(),
+        TiffBeRule(),
     ];
 
     private static FormatRule CreateRule(string format, string desc,
@@ -222,6 +230,113 @@ public static class BuiltinRuleProvider
                 ("MinorVersion", "uint16", 4, 2, "BigEndian"),
                 ("MajorVersion", "uint16", 6, 2, "BigEndian"),
                 ("ConstantPoolCount", "uint16", 8, 2, "BigEndian"),
+            ]),
+        ]);
+
+    private static FormatRule MidiRule() => CreateRule("MIDI", "MIDI 文件结构",
+        [([0x4D, 0x54, 0x68, 0x64], 0, 14)],
+        [
+            ("MIDI Header Chunk", [
+                ("ChunkID", "ascii", 0, 4, null),
+                ("ChunkSize", "uint32", 4, 4, null),
+                ("FormatType", "uint16", 8, 2, null),
+                ("NumTracks", "uint16", 10, 2, null),
+                ("TimeDivision", "uint16", 12, 2, null),
+            ]),
+        ]);
+
+    private static FormatRule FlacRule() => CreateRule("FLAC", "FLAC 音频文件结构",
+        [([0x66, 0x4C, 0x61, 0x43], 0, 42)],
+        [
+            ("FLAC Marker", [("Marker", "ascii", 0, 4, null)]),
+            ("STREAMINFO Block Header", [
+                ("MetaBlockHeader", "bytes", 4, 4, null),
+            ]),
+            ("STREAMINFO", [
+                ("MinBlockSize", "uint16", 8, 2, null),
+                ("MaxBlockSize", "uint16", 10, 2, null),
+                ("MinFrameSize", "uint32", 12, 3, null),
+                ("MaxFrameSize", "uint32", 15, 3, null),
+                ("SampleRate", "uint32", 20, 2, null),
+                ("NumChannels", "uint8", 22, 1, null),
+                ("BitsPerSample", "uint8", 23, 1, null),
+                ("TotalSamples", "uint64", 24, 8, null),
+            ]),
+        ]);
+
+    private static FormatRule Bzip2Rule() => CreateRule("BZip2", "BZip2 压缩文件结构",
+        [([0x42, 0x5A, 0x68], 0, 14)],
+        [
+            ("BZip2 Stream Header", [
+                ("ID1", "uint8", 0, 1, null),
+                ("ID2", "uint8", 1, 1, null),
+                ("Version", "uint8", 2, 1, null),
+                ("BlockSize", "uint8", 3, 1, null),
+            ]),
+            ("BZip2 Block Header", [
+                ("BlockMagic1", "uint8", 4, 1, null),
+                ("BlockMagic2", "uint8", 5, 1, null),
+                ("BlockMagic3", "uint8", 6, 1, null),
+                ("BlockMagic4", "uint8", 7, 1, null),
+                ("BlockMagic5", "uint8", 8, 1, null),
+                ("BlockMagic6", "uint8", 9, 1, null),
+                ("CRC", "uint32", 10, 4, null),
+            ]),
+        ]);
+
+    private static FormatRule TtfRule() => CreateRule("TTF", "TrueType/OpenType 字体文件结构",
+        [([0x00, 0x01, 0x00, 0x00, 0x00], 0, 12)],
+        [
+            ("Offset Table", [
+                ("sfVersion", "uint32", 0, 4, null),
+                ("numTables", "uint16", 4, 2, null),
+                ("searchRange", "uint16", 6, 2, null),
+                ("entrySelector", "uint16", 8, 2, null),
+                ("rangeShift", "uint16", 10, 2, null),
+            ]),
+        ]);
+
+    private static FormatRule OtfRule() => CreateRule("OTF", "OpenType 字体文件结构",
+        [([0x4F, 0x54, 0x54, 0x4F], 0, 12)],
+        [
+            ("Offset Table", [
+                ("sfVersion", "uint32", 0, 4, null),
+                ("numTables", "uint16", 4, 2, null),
+                ("searchRange", "uint16", 6, 2, null),
+                ("entrySelector", "uint16", 8, 2, null),
+                ("rangeShift", "uint16", 10, 2, null),
+            ]),
+        ]);
+
+    private static FormatRule Id3v2Rule() => CreateRule("MP3-ID3", "MP3 ID3v2 标签结构",
+        [([0x49, 0x44, 0x33], 0, 10)],
+        [
+            ("ID3v2 Header", [
+                ("Identifier", "ascii", 0, 3, null),
+                ("VersionMajor", "uint8", 3, 1, null),
+                ("VersionMinor", "uint8", 4, 1, null),
+                ("Flags", "uint8", 5, 1, null),
+                ("Size", "bytes", 6, 4, null),
+            ]),
+        ]);
+
+    private static FormatRule TiffRule() => CreateRule("TIFF-LE", "TIFF 图片文件结构 (小端)",
+        [([0x49, 0x49, 0x2A, 0x00], 0, 8)],
+        [
+            ("TIFF Header", [
+                ("ByteOrder", "ascii", 0, 2, null),
+                ("Magic", "uint16", 2, 2, null),
+                ("IFD0Offset", "uint32", 4, 4, null),
+            ]),
+        ]);
+
+    private static FormatRule TiffBeRule() => CreateRule("TIFF-BE", "TIFF 图片文件结构 (大端)",
+        [([0x4D, 0x4D, 0x00, 0x2A], 0, 8)],
+        [
+            ("TIFF Header", [
+                ("ByteOrder", "ascii", 0, 2, null),
+                ("Magic", "uint16", 2, 2, null),
+                ("IFD0Offset", "uint32", 4, 4, null),
             ]),
         ]);
 }
