@@ -598,7 +598,7 @@ public partial class StructureTreeView : UserControl
             if (head.Length < 5) return null;
             var (hdrSizeVal, hdrSizeLen) = ReadRar5Vint(head, 4);
             if (hdrSizeVal == 0 || hdrSizeVal > 1024 * 1024) return null; // 限制1MB
-            hdrSize = (int)hdrSizeVal;
+            hdrSize = 4 + hdrSizeLen + (int)hdrSizeVal;
             if (pos + hdrSize > buffer.Length) return null;
             return buffer.ReadBytes(pos, hdrSize);
         }
