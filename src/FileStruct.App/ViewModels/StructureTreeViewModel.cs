@@ -490,7 +490,7 @@ public class TreeItemViewModel : ObservableObject
     public StructureNodeSource Source => _node.Source;
     public System.Windows.Media.Brush? Foreground => Source == StructureNodeSource.UserCreated
         ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x42, 0xA5, 0xF5))
-        : null; // null = inherit parent foreground
+        : null;
     public bool IsExpanded
     {
         get => _node.IsExpanded;

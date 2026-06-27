@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:FileStruct.App.ViewModels"
+             xmlns:models="clr-namespace:FileStruct.Core.Models;assembly=FileStruct.Core"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="300">
     <Grid>
@@ -36,7 +37,17 @@
                 <HierarchicalDataTemplate DataType="{x:Type local:TreeItemViewModel}"
                                           ItemsSource="{Binding Children}">
                     <StackPanel Orientation="Horizontal" ToolTip="{Binding Path=Node.Description}">
-                        <TextBlock Text="{Binding Name}" FontWeight="Bold" Margin="0,0,4,0" Foreground="{Binding Foreground}"/>
+                        <TextBlock Text="{Binding Name}" FontWeight="Bold" Margin="0,0,4,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Source}" Value="{x:Static models:StructureNodeSource.UserCreated}">
+                                            <Setter Property="Foreground" Value="#42A5F5"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <TextBlock Text="{Binding Offset, StringFormat={}0x{0:X}}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,4,0"/>
                         <TextBlock Text="{Binding Length, StringFormat={}[{0}]}" Foreground="{DynamicResource TextMutedBrush}"/>
                         <TextBlock Text="{Binding DataType}" Foreground="{DynamicResource AccentBrush}" Margin="4,0,0,0"/>
