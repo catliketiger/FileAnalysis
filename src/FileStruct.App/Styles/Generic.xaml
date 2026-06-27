@@ -14,24 +14,24 @@
     <!-- 十六进制行数据模板 -->
     <DataTemplate x:Key="HexRowTemplate">
         <Border x:Name="RowBorder" Height="20">
-            <Grid Margin="0">
+            <Grid Margin="0" TextBlock.FontFamily="Cascadia Code" TextBlock.FontSize="13">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="80"/>
                     <ColumnDefinition Width="*" MinWidth="300"/>
-                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="Auto" MinWidth="140"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- 偏移列 -->
                 <TextBlock Grid.Column="0"
                            Text="{Binding OffsetString}"
-                           FontFamily="Cascadia Code" FontSize="13"
                            Foreground="{DynamicResource TextSecondaryBrush}" Margin="4,0"/>
 
                 <!-- 十六进制列 - 逐字节显示 -->
                 <ItemsControl Grid.Column="1"
                               ItemsSource="{Binding Bytes}"
                               ItemTemplate="{StaticResource ByteCellTemplate}"
-                              Margin="4,0,0,0">
+                              Margin="4,0,0,0"
+                              HorizontalContentAlignment="Left">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <WrapPanel Orientation="Horizontal" IsItemsHost="True"/>
@@ -42,8 +42,7 @@
                 <!-- ASCII 列 -->
                 <TextBlock Grid.Column="2"
                            Text="{Binding AsciiString}"
-                           FontFamily="Cascadia Code" FontSize="13"
-                           Foreground="{DynamicResource TextMutedBrush}" Margin="8,0,0,0"/>
+                           Foreground="{DynamicResource TextMutedBrush}" Margin="6,0,0,0"/>
             </Grid>
         </Border>
     </DataTemplate>
