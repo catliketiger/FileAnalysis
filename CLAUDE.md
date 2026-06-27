@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Windows desktop tool for binary file structure analysis — automatically identifies and visualizes the internal layout of unknown binary files through signature matching and heuristic inference, with a hex view + structure tree as the core interaction model.
 
-**Current status**: V1.3. C# .NET 10 WPF, with dual-engine structure recognition, 35+ predefined format structure rules with sequential/repeating/schema support, structure tree save/restore, array loop + offsetFrom + lengthField, PE dynamic offset handling, 134 xUnit tests passing (0 warnings, 0 errors).
+**Current status**: V1.6. C# .NET 10 WPF, with 40+ predefined format rules and ZIP/RAR4/RAR5 container expansion, PDF/MP4/MKV/JPG format recognition, structure tree management (add/delete/edit/import/export), asynchronous search, hex view with virtualization & selection highlighting, 134 xUnit tests passing (0 warnings, 0 errors).
 
 ## Tech Stack
 
@@ -117,7 +117,8 @@ From `.spec/开发规范.md`:
 | V1.1 Core | Feature completion round 1 | Byte search, context menus, 18 built-in format rules, PE dynamic offsets, rule export, live preview, bookmarks, hex tools |
 | V1.2 Core | Format rules + save/restore | Sequential mode for rules, 30+ format structure rules, structure tree save/restore, .ts dual detection, ISO 64KB header scan, hash calc deadlock fix |
 | V1.3 Core | Array & repeating + more rules | Array loop mode, offsetFrom, lengthField, repeating structures, 35 format rules (RAR/PSD/PDF/OGG/Dump), file metadata panel, Windows Dump support |
-| V1.5 Pro | Advanced analysis | File diff (byte + field level), split views, theming, rule management, structure export (C struct/JSON), exception handling polish |
+| V1.5 Pro | Advanced analysis (deferred) | File diff (byte + field level), split views, theming, rule management, structure export (C struct/JSON), exception handling polish |
+| **V1.6** | **Structure editing + format recognition** | **Structure tree management (edit/import/export), ZIP/RAR4/RAR5 container expansion, PDF/MP4/MKV/JPG format rules, async search, hex view performance optimization, encryption detection** |
 | V2.0 AI | Intelligent extension | LLM-powered structure recognition, batch classification |
 
 ## Development Conventions
