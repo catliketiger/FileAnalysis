@@ -555,85 +555,84 @@ public partial class StructureTreeView : UserControl
 
         private void ExpandRar4Archive(TreeItemViewModel item, BinaryBuffer buffer, MainViewModel mainVm)
         {
-            // RAR4 压缩包展开：依次扫描文件头块 (HeaderType=0x74)
-            long pos = 7; // 跳过 Rar!\x1A\x07\x00 标记
+            long pos = 7; // 跳过 "Rar!\x1A\x07\x00" (7字节)
             int count = 0;
             var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
 
-            while (pos + 11 <= buffer.Length && count < 10000)
+            while (pos + 7 <= buffer.Length && count < 10000)
             {
-                // 读取块头前 3 字节：CRC(2) + Type(1)
-                var headerCRCLow = buffer.ReadByte(pos);
-                var headerCRCHigh = buffer.ReadByte(pos + 1);
                 var headerType = buffer.ReadByte(pos + 2);
-                var headerCRC = (uint)(headerCRCLow | (headerCRCHigh << 8));
                 var headerFlags = buffer.ReadUInt16(pos + 3, true);
+                var hasHighSize = (headerFlags & 0x0100) != 0;
+                var isEnc = (headerFlags & 0x0004) != 0;
+                var hasSalt = (headerFlags & 0x0400) != 0;
 
-                if (headerType == 0x74) // RAR4 文件头
+                if (headerType == 0x74) // 文件头
                 {
-                    // 文件头固定部分: ... 这里从 pos+5 开始解析文件信息
-                    var compSizeHigh = (headerFlags & 0x0100) != 0 ? (long)buffer.ReadUInt32(pos + 5, true) : 0;
-                    var compSize = (long)buffer.ReadUInt32(pos + 9, true) | (compSizeHigh << 32);
-                    var uncompSizeHigh = (headerFlags & 0x0100) != 0 ? (long)buffer.ReadUInt32(pos + 13, true) : 0;
-                    var uncompSize = (long)buffer.ReadUInt32(pos + 17, true) | (uncompSizeHigh << 32);
-                    var os = buffer.ReadByte(pos + 21);
-                    var fileCRC = buffer.ReadUInt32(pos + 22, true);
-                    var fileTime = buffer.ReadUInt32(pos + 26, true);
-                    var ver = buffer.ReadByte(pos + 30);
-                    var method = buffer.ReadByte(pos + 31);
-                    int nameSize = buffer.ReadUInt16(pos + 32, true);
-                    var fileAttr = buffer.ReadUInt32(pos + 34, true);
+                    // 根据 HIGH_SIZE flag 计算偏移
+                    int hiOff = hasHighSize ? 8 : 0; // 4+4 bytes for PackHigh+UnpackHigh
 
-                    // 文件名
+                    var compSize = (long)buffer.ReadUInt32(pos + 5 + (hasHighSize ? 8 : 0), true);
+                    if (hasHighSize)
+                        compSize |= (long)buffer.ReadUInt32(pos + 5, true) << 32;
+                    var uncompSize = (long)buffer.ReadUInt32(pos + 9 + (hasHighSize ? 8 : 0), true);
+                    if (hasHighSize)
+                        uncompSize |= (long)buffer.ReadUInt32(pos + 9, true) << 32;
+
+                    int fOff = 13 + hiOff; // 固定字段起始偏移
+                    var os = buffer.ReadByte(pos + fOff);
+                    var fileCRC = buffer.ReadUInt32(pos + fOff + 1, true);
+                    var fileTime = buffer.ReadUInt32(pos + fOff + 5, true);
+                    var ver = buffer.ReadByte(pos + fOff + 9);
+                    var method = buffer.ReadByte(pos + fOff + 10);
+                    int nameSize = buffer.ReadUInt16(pos + fOff + 11, true);
+                    var fileAttr = buffer.ReadUInt32(pos + fOff + 13, true);
+                    int nameOff = fOff + 17; // 文件名偏移
+
                     string fileName;
-                    if (nameSize > 0 && pos + 38 + nameSize <= buffer.Length)
+                    if (nameSize > 0 && pos + nameOff + nameSize <= buffer.Length)
                     {
-                        var nameBytes = buffer.ReadBytes(pos + 38, nameSize);
+                        var nameBytes = buffer.ReadBytes(pos + nameOff, nameSize);
                         fileName = System.Text.Encoding.UTF8.GetString(nameBytes);
                     }
                     else fileName = $"(file_{count})";
 
-                    // 计算总块大小 (38 + 文件名 + 其他)
-                    var extraSize = (headerFlags & 0x0008) != 0 ? buffer.ReadUInt16(pos + 5, true) : (ushort)0;
-                    var saltSize = (headerFlags & 0x0400) != 0 ? 8 : 0;
-                    var blockTotal = 7 + extraSize + saltSize;
-                    if ((headerFlags & 0x0008) != 0) blockTotal += 2; // extra area size field itself
-                    blockTotal += 38 + nameSize; // full header
+                    // 计算头部总大小
+                    int hdrTotal = nameOff + nameSize;
+                    if (hasSalt) hdrTotal += 8;
+                    if ((headerFlags & 0x0008) != 0) // extra area
+                    {
+                        var extraSize = buffer.ReadUInt16(pos + hdrTotal, true);
+                        hdrTotal += 2 + extraSize;
+                    }
 
-                    var isEnc = (headerFlags & 0x0004) != 0;
                     var methodStr = method <= 5 ? $"v{method}" : $"?{method}";
                     var displayName = $"{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
-                    var dataOffset = pos + blockTotal;
-
+                    var dataOff = pos + hdrTotal;
                     var rarDesc = isEnc ? $"[加密] RAR4 {methodStr}: {compSize} → {uncompSize} bytes" : $"RAR4 {methodStr}: {compSize} → {uncompSize} bytes";
-                    entries.Add((dataOffset, compSize > 0 ? compSize : uncompSize,
+                    entries.Add((dataOff, compSize > 0 ? compSize : Math.Max(1, uncompSize),
                         displayName, rarDesc, fileName, isEnc));
                     count++;
 
-                    pos = dataOffset + compSize;
+                    pos = dataOff + (compSize > 0 ? compSize : 0);
                 }
                 else if (headerType == 0x73) // 归档头
                 {
-                    var extraSize = (headerFlags & 0x0008) != 0 ? buffer.ReadUInt16(pos + 5, true) : (ushort)0;
-                    pos += 7 + extraSize + ((headerFlags & 0x0008) != 0 ? 2 : 0);
+                    var hasExtra = (headerFlags & 0x0008) != 0;
+                    pos += 7 + (hasExtra ? 2 + buffer.ReadUInt16(pos + 5, true) : 0);
                 }
                 else if (headerType == 0x7B) // 结束块
                     break;
                 else
-                {
-                    // 未知块：跳过一个块大小或尝试前移
-                    if ((headerFlags & 0x0008) != 0 && pos + 7 <= buffer.Length)
-                    {
-                        var extraSize = buffer.ReadUInt16(pos + 5, true);
-                        pos += 7 + extraSize + 2;
-                    }
-                    else pos += 11;
-                }
+                    pos += 7 + (((headerFlags & 0x0008) != 0) ? 2 + buffer.ReadUInt16(pos + 5, true) : 0);
 
-                if (pos >= buffer.Length) break;
+                if (pos >= buffer.Length || pos < 0) break;
             }
 
-            BuildArchiveTree(item.Node, entries, mainVm);
+            if (count > 0)
+                BuildArchiveTree(item.Node, entries, mainVm);
+            else
+                mainVm.StatusText = "未找到RAR4压缩条目";
         }
 
         private static void BuildArchiveTree(StructureNode parent,
