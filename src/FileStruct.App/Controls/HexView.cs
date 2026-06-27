@@ -17,6 +17,7 @@ public class HexView : Control
     public HexView()
     {
         Selection = new SelectionManager();
+        InitHexHeader();
     }
 
     #region 依赖属性
@@ -32,6 +33,10 @@ public class HexView : Control
     public static readonly DependencyProperty ByteGroupSizeProperty =
         DependencyProperty.Register(nameof(ByteGroupSize), typeof(int),
             typeof(HexView), new PropertyMetadata(2, OnByteGroupSizeChanged));
+
+    public static readonly DependencyProperty HexHeaderItemsProperty =
+        DependencyProperty.Register(nameof(HexHeaderItems), typeof(ByteCell[]),
+            typeof(HexView), new PropertyMetadata(null));
 
     public static readonly DependencyProperty ScrollOffsetProperty =
         DependencyProperty.Register(nameof(ScrollOffset), typeof(long),
@@ -69,6 +74,13 @@ public class HexView : Control
     {
         get => (int)GetValue(ByteGroupSizeProperty);
         set => SetValue(ByteGroupSizeProperty, value);
+    }
+
+    /// <summary>十六进制列顶部的行内偏移标题（0~F）</summary>
+    public ByteCell[]? HexHeaderItems
+    {
+        get => (ByteCell[]?)GetValue(HexHeaderItemsProperty);
+        set => SetValue(HexHeaderItemsProperty, value);
     }
 
     public long ScrollOffset
@@ -118,6 +130,16 @@ public class HexView : Control
     #endregion
 
     #region 方法
+
+    /// <summary>生成十六进制列顶部的行内偏移标题（0~F）</summary>
+    private void InitHexHeader()
+    {
+        var count = BytesPerRow; // 默认 16
+        var items = new ByteCell[count];
+        for (int i = 0; i < count; i++)
+            items[i] = new ByteCell { Hex = i.ToString("X"), Offset = -1 };
+        HexHeaderItems = items;
+    }
 
     public override void OnApplyTemplate()
     {

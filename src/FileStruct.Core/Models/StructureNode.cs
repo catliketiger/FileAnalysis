@@ -101,6 +101,10 @@ public class StructureNode : INotifyPropertyChanged
     /// <summary>该字段/条目是否加密（用于压缩包和文档加密提示）</summary>
     public bool IsEncrypted { get; set; }
 
+    /// <summary>是否分卷占位节点（未加载的分卷文件，不随 JSON 导入导出）</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsVolumePlaceholder { get; set; }
+
     public string HighlightColor
     {
         get => _highlightColor;
@@ -181,6 +185,7 @@ public class StructureNode : INotifyPropertyChanged
             Source = Source,
             HighlightColor = HighlightColor,
             IsEncrypted = IsEncrypted,
+            IsVolumePlaceholder = IsVolumePlaceholder,
             OriginalSnapshot = OriginalSnapshot,
         };
         foreach (var child in Children)
@@ -203,6 +208,7 @@ public class StructureNode : INotifyPropertyChanged
         Source = snapshot.Source;
         HighlightColor = snapshot.HighlightColor;
         IsEncrypted = snapshot.IsEncrypted;
+        IsVolumePlaceholder = snapshot.IsVolumePlaceholder;
 
         Children.Clear();
         foreach (var child in snapshot.Children)

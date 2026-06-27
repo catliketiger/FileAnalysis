@@ -48,6 +48,12 @@ public static class BuiltinRuleProvider
         Mp4Rule(),
         JpgRule(),
         MkvRule(),
+        CrxRule(),
+        PycRule(),
+        PakRule(),
+        CabRule(),
+        SevenZipRule(),
+        TarRule(),
     ];
 
     private static FormatRule CreateRule(string format, string desc,
@@ -265,6 +271,9 @@ public static class BuiltinRuleProvider
                 ("IconIndex", "int32", 56, 4, null),
                 ("ShowCommand", "uint32", 60, 4, null),
                 ("Hotkey", "uint16", 64, 2, null),
+                ("Reserved1", "uint16", 66, 2, null),
+                ("Reserved2", "uint32", 68, 4, null),
+                ("Reserved3", "uint32", 72, 4, null),
             ], false),
         ]);
 
@@ -734,6 +743,144 @@ public static class BuiltinRuleProvider
                     ("Data", "bytes", 0x44, 0x100000, null),
                 ], false),
             ]);
+        return rule;
+    }
+
+    private static FormatRule PycRule()
+    {
+        var rule = CreateRule("PYC", "Python 字节码文件结构",
+            [([0x55, 0x0D, 0x0D, 0x0A], 0, 12)],
+            [
+                ("PYC Header", [
+                    ("Magic", "bytes", 0, 4, null),
+                    ("BitField", "uint32", 4, 4, null),
+                ], false),
+            ]);
+        // 根据 BitField 标志添加版本相关字段
+        rule.Structures.Add(new FormatStructure
+        {
+            Name = "PYC Timestamp Mode",
+            Type = "struct", Sequential = false,
+            Fields =
+            {
+                new FormatField { Name = "Timestamp", Type = "uint32", Offset = 8, Length = 4 },
+                new FormatField { Name = "SourceSize", Type = "uint32", Offset = 12, Length = 4 },
+            },
+        });
+        rule.Structures.Add(new FormatStructure
+        {
+            Name = "PYC Hash Mode",
+            Type = "struct", Sequential = false,
+            Fields =
+            {
+                new FormatField { Name = "SourceHash", Type = "bytes", Offset = 8, Length = 8 },
+            },
+        });
+        return rule;
+    }
+
+    private static FormatRule PakRule() => CreateRule("PAK", "Unreal Engine 游戏资源包结构",
+        [([0x50, 0x41, 0x43, 0x4B], 0, 16)],
+        [
+            ("PAK Header", [
+                ("Magic", "bytes", 0, 4, null),
+                ("Version", "uint32", 4, 4, null),
+                ("SubVersion", "uint32", 8, 4, null),
+                ("bEncrypted", "uint32", 12, 4, null),
+            ], false),
+        ]);
+
+    private static FormatRule CabRule() => CreateRule("CAB", "Microsoft Cabinet 压缩包结构",
+        [([0x4D, 0x53, 0x43, 0x46], 0, 36)],
+        [
+            ("CFHEADER", [
+                ("Signature", "bytes", 0, 4, null),
+                ("CabinetSize", "uint32", 4, 4, null),
+                ("Reserved1", "uint32", 8, 4, null),
+                ("FilesOffset", "uint32", 12, 4, null),
+                ("Reserved2", "uint32", 16, 4, null),
+                ("MinorVersion", "uint8", 20, 1, null),
+                ("MajorVersion", "uint8", 21, 1, null),
+                ("NumFolders", "uint16", 22, 2, null),
+                ("NumFiles", "uint16", 24, 2, null),
+                ("Flags", "uint16", 26, 2, null),
+                ("SetID", "uint16", 28, 2, null),
+                ("CabinetNumber", "uint16", 30, 2, null),
+            ], false),
+        ]);
+
+    private static FormatRule SevenZipRule() => CreateRule("7z", "7-Zip 压缩包结构",
+        [([0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C], 0, 32)],
+        [
+            ("7z Start Header", [
+                ("Signature", "bytes", 0, 6, null),
+                ("Version", "bytes", 6, 2, null),
+                ("StartHeaderCRC", "uint32", 8, 4, null),
+                ("NextHeaderOffset", "uint64", 12, 8, null),
+                ("NextHeaderSize", "uint64", 20, 8, null),
+                ("NextHeaderCRC", "uint32", 28, 4, null),
+            ], false),
+        ]);
+
+    private static FormatRule TarRule()
+    {
+        var rule = CreateRule("TAR", "POSIX TAR 归档文件结构",
+            [([0x75, 0x73, 0x74, 0x61, 0x72], 0x101, 520)],
+            [
+                ("TAR Header", [
+                    ("FileName", "ascii", 0, 100, null),
+                    ("FileMode", "ascii", 100, 8, null),
+                    ("OwnerID", "ascii", 108, 8, null),
+                    ("GroupID", "ascii", 116, 8, null),
+                    ("FileSize", "ascii", 124, 12, null),
+                    ("ModTime", "ascii", 136, 12, null),
+                    ("Checksum", "ascii", 148, 8, null),
+                    ("TypeFlag", "ascii", 156, 1, null),
+                    ("LinkName", "ascii", 157, 100, null),
+                    ("Magic", "ascii", 257, 6, null),
+                    ("Version", "ascii", 263, 2, null),
+                    ("OwnerName", "ascii", 265, 32, null),
+                    ("GroupName", "ascii", 297, 32, null),
+                    ("DevMajor", "ascii", 329, 8, null),
+                    ("DevMinor", "ascii", 337, 8, null),
+                    ("Prefix", "ascii", 345, 155, null),
+                ], false),
+            ]);
+        return rule;
+    }
+
+    private static FormatRule CrxRule()
+    {
+        var rule = CreateRule("CRX", "Chrome 扩展包文件结构",
+            [([0x43, 0x72, 0x32, 0x34], 0, 16)],
+            [
+                ("CRX Header", [
+                    ("Magic", "bytes", 0, 4, null),
+                    ("Version", "uint32", 4, 4, null),
+                ], false),
+            ]);
+        // 根据版本扩展 v2/v3 头部结构
+        rule.Structures.Add(new FormatStructure
+        {
+            Name = "CRX v2 Header",
+            Type = "struct",
+            Sequential = false,
+            Fields =
+            {
+                new FormatField { Name = "PublicKeyLength", Type = "uint32", Offset = 8, Length = 4 },
+                new FormatField { Name = "SignatureLength", Type = "uint32", Offset = 12, Length = 4 },
+            },
+        });
+        rule.Structures.Add(new FormatStructure
+        {
+            Name = "CRX v3 Header",
+            Type = "struct",
+            Sequential = false,
+            Fields =
+            {
+                new FormatField { Name = "HeaderLength", Type = "uint32", Offset = 8, Length = 4 },
+            },
+        });
         return rule;
     }
 }

@@ -30,6 +30,7 @@ public class FileTypeDetector : IFileTypeDetector
         [".vue"] = (FileCategory.Text, "Vue 组件", "text/html"),
         [".svelte"] = (FileCategory.Text, "Svelte 组件", "text/html"),
         [".py"] = (FileCategory.Text, "Python 脚本", "text/x-python"),
+        [".pyc"] = (FileCategory.Binary, "Python 字节码", "application/x-python-bytecode"),
         [".java"] = (FileCategory.Text, "Java 源文件", "text/x-java"),
         [".kt"] = (FileCategory.Text, "Kotlin 源文件", "text/x-kotlin"),
         [".kts"] = (FileCategory.Text, "Kotlin 脚本", "text/x-kotlin"),
@@ -96,15 +97,22 @@ public class FileTypeDetector : IFileTypeDetector
 
         // ═══ 压缩/归档 ═══
         [".zip"] = (FileCategory.Archive, "ZIP 压缩包", "application/zip"),
+        [".z01"] = (FileCategory.Archive, "ZIP 分卷 (z01)", "application/zip"),
+        [".z02"] = (FileCategory.Archive, "ZIP 分卷 (z02)", "application/zip"),
         [".rar"] = (FileCategory.Archive, "RAR 压缩包", "application/vnd.rar"),
+        [".r00"] = (FileCategory.Archive, "RAR 分卷 (r00)", "application/vnd.rar"),
+        [".r01"] = (FileCategory.Archive, "RAR 分卷 (r01)", "application/vnd.rar"),
         [".7z"] = (FileCategory.Archive, "7z 压缩包", "application/x-7z-compressed"),
         [".gz"] = (FileCategory.Archive, "GZip 压缩文件", "application/gzip"),
         [".tar"] = (FileCategory.Archive, "TAR 归档", "application/x-tar"),
+        [".tgz"] = (FileCategory.Archive, "GZip 压缩归档", "application/gzip"),
         [".bz2"] = (FileCategory.Archive, "BZip2 压缩文件", "application/x-bzip2"),
         [".xz"] = (FileCategory.Archive, "XZ 压缩文件", "application/x-xz"),
         [".zst"] = (FileCategory.Archive, "Zstd 压缩文件", "application/zstd"),
         [".iso"] = (FileCategory.Archive, "光盘映像", "application/x-iso9660-image"),
         [".cab"] = (FileCategory.Archive, "Cabinet 压缩包", "application/vnd.ms-cab-compressed"),
+        [".pak"] = (FileCategory.Archive, "Unreal Engine 资源包", "application/x-unreal-pak"),
+        [".crx"] = (FileCategory.Archive, "Chrome 扩展包", "application/x-chrome-extension"),
 
         // ═══ 图片 ═══
         [".png"] = (FileCategory.Image, "PNG 图片", "image/png"),
@@ -161,6 +169,11 @@ public class FileTypeDetector : IFileTypeDetector
         [".ods"] = (FileCategory.Document, "OpenDocument 表格", "application/vnd.oasis.opendocument.spreadsheet"),
         [".odp"] = (FileCategory.Document, "OpenDocument 演示", "application/vnd.oasis.opendocument.presentation"),
         [".rtf"] = (FileCategory.Document, "RTF 文档", "application/rtf"),
+
+        // ═══ 电子书 ═══
+        [".epub"] = (FileCategory.Document, "EPUB 电子书", "application/epub+zip"),
+        [".mobi"] = (FileCategory.Document, "MOBI 电子书", "application/x-mobipocket-ebook"),
+        [".azw3"] = (FileCategory.Document, "AZW3 电子书", "application/vnd.amazon.ebook"),
 
         // ═══ 数据库 ═══
         [".db"] = (FileCategory.Binary, "SQLite 数据库", "application/x-sqlite3"),
@@ -236,13 +249,19 @@ public class FileTypeDetector : IFileTypeDetector
 
         // ═══ 压缩/归档 ═══
         ([0x50, 0x4B, 0x03, 0x04], 0, FileCategory.Archive, "ZIP 压缩包", "application/zip"),
+        ([0x50, 0x4B, 0x01, 0x02], 0, FileCategory.Archive, "ZIP 压缩包 (CD)", "application/zip"),
+        ([0x50, 0x4B, 0x07, 0x08], 0, FileCategory.Archive, "ZIP 压缩包 (分卷首段)", "application/zip"),
+        ([0x50, 0x4B, 0x30, 0x30], 0, FileCategory.Archive, "ZIP 压缩包 (分卷临时)", "application/zip"),
+        ([0x43, 0x72, 0x32, 0x34], 0, FileCategory.Archive, "Chrome 扩展包", "application/x-chrome-extension"),
+        ([0x50, 0x41, 0x43, 0x4B], 0, FileCategory.Archive, "Unreal Engine 资源包", "application/x-unreal-pak"),
         ([0x52, 0x61, 0x72, 0x21, 0x1A, 0x07], 0, FileCategory.Archive, "RAR 压缩包", "application/vnd.rar"),
         ([0x1F, 0x8B, 0x08], 0, FileCategory.Archive, "GZip 压缩文件", "application/gzip"),
         ([0x42, 0x5A, 0x68], 0, FileCategory.Archive, "BZip2 压缩文件", "application/x-bzip2"),
         ([0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00], 0, FileCategory.Archive, "XZ 压缩文件", "application/x-xz"),
         ([0x28, 0xB5, 0x2F, 0xFD], 0, FileCategory.Archive, "Zstd 压缩文件", "application/zstd"),
         ([0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C], 0, FileCategory.Archive, "7z 压缩包", "application/x-7z-compressed"),
-        ([0x49, 0x53, 0x63, 0x28], 0, FileCategory.Archive, "CAB 压缩包", "application/vnd.ms-cab-compressed"),
+        ([0x4D, 0x53, 0x43, 0x46], 0, FileCategory.Archive, "CAB 压缩包", "application/vnd.ms-cab-compressed"),
+        ([0x75, 0x73, 0x74, 0x61, 0x72], 0x101, FileCategory.Archive, "TAR 归档", "application/x-tar"), // "ustar" @ offset 257
 
         // ═══ 可执行文件 ═══
         ([0x4D, 0x5A], 0, FileCategory.Executable, "Windows 可执行文件", "application/x-msdownload"),
@@ -278,6 +297,18 @@ public class FileTypeDetector : IFileTypeDetector
 
         // 其他
         ([0xCA, 0xFE, 0xBA, 0xBE], 0, FileCategory.Binary, "Java Class 文件", "application/java-vm"),
+
+        // ═══ 电子书 ═══
+        ([0x42, 0x4F, 0x4F, 0x4B, 0x4D, 0x4F, 0x42, 0x49], 0x3C, FileCategory.Document, "MOBI 电子书", "application/x-mobipocket-ebook"),
+
+        // ═══ Python 字节码 (多版本) ═══
+        // Python 3.8-3.13 均以 XX 0D 0D 0A 结尾
+        ([0x55, 0x0D, 0x0D, 0x0A], 0, FileCategory.Binary, "Python 字节码 (3.8)", "application/x-python-bytecode"),
+        ([0x61, 0x0D, 0x0D, 0x0A], 0, FileCategory.Binary, "Python 字节码 (3.9)", "application/x-python-bytecode"),
+        ([0x6F, 0x0D, 0x0D, 0x0A], 0, FileCategory.Binary, "Python 字节码 (3.10)", "application/x-python-bytecode"),
+        ([0xA7, 0x0D, 0x0D, 0x0A], 0, FileCategory.Binary, "Python 字节码 (3.11)", "application/x-python-bytecode"),
+        ([0x0B, 0x0C, 0x0D, 0x0A], 0, FileCategory.Binary, "Python 字节码 (3.12)", "application/x-python-bytecode"),
+        ([0x0D, 0x0D, 0x0D, 0x0A], 0, FileCategory.Binary, "Python 字节码 (3.13)", "application/x-python-bytecode"),
     };
 
     public FileTypeInfo DetectByExtension(string filePath)
@@ -322,6 +353,44 @@ public class FileTypeDetector : IFileTypeDetector
     {
         // 优先基于魔数匹配
         var headerResult = DetectByHeader(headerBytes);
+
+        // ZIP 魔数 + 特定扩展名 → 覆盖为容器格式（APK/EPUB 等）
+        if (headerResult.Category == FileCategory.Archive)
+        {
+            var ext = Path.GetExtension(filePath);
+            if (".apk".Equals(ext, StringComparison.OrdinalIgnoreCase))
+            {
+                return new FileTypeInfo(FileCategory.Archive, ".apk",
+                    "Android 应用包 (APK)", false, null,
+                    "application/vnd.android.package-archive");
+            }
+            if (".epub".Equals(ext, StringComparison.OrdinalIgnoreCase))
+            {
+                return new FileTypeInfo(FileCategory.Document, ".epub",
+                    "EPUB 电子书", false, null,
+                    "application/epub+zip");
+            }
+        }
+
+        // MOBI/AZW3 细分：PalmDB 魔数匹配后根据扩展名区分
+        if (headerResult.Category == FileCategory.Document &&
+            headerResult.DisplayName.Contains("MOBI"))
+        {
+            var ext = Path.GetExtension(filePath);
+            if (".azw3".Equals(ext, StringComparison.OrdinalIgnoreCase))
+            {
+                return new FileTypeInfo(FileCategory.Document, ".azw3",
+                    "AZW3 电子书", false, null,
+                    "application/vnd.amazon.ebook");
+            }
+            if (".mobi".Equals(ext, StringComparison.OrdinalIgnoreCase))
+            {
+                return new FileTypeInfo(FileCategory.Document, ".mobi",
+                    "MOBI 电子书", false, null,
+                    "application/x-mobipocket-ebook");
+            }
+        }
+
         if (headerResult.Category != FileCategory.Unknown && headerResult.Category != FileCategory.Binary)
         {
             // 魔数匹配成功时补充扩展名信息

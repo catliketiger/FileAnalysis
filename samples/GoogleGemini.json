@@ -1,0 +1,1402 @@
+{
+  "RuleVersion": "1.0",
+  "Format": "PE",
+  "Description": "Windows PE 可执行文件",
+  "Signatures": [
+    {
+      "Name": "PE Magic",
+      "Pattern": "TVp4AAEAAAAEAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAA=",
+      "Offset": 0,
+      "Mask": null,
+      "MinFileSize": null
+    }
+  ],
+  "Structures": [
+    {
+      "Name": "DOS Header",
+      "Type": "struct",
+      "Sequential": false,
+      "Repeating": false,
+      "StepSize": 0,
+      "FixedCount": null,
+      "CountField": null,
+      "BaseRepeatOffset": 0,
+      "Fields": [
+        {
+          "Name": "DOS Header",
+          "Type": "struct",
+          "Offset": 0,
+          "Length": 2493080,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_magic",
+          "Type": "uint16",
+          "Offset": 124,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_cblp",
+          "Type": "uint16",
+          "Offset": 126,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_cp",
+          "Type": "uint16",
+          "Offset": 128,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_crlc",
+          "Type": "uint16",
+          "Offset": 130,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_cparhdr",
+          "Type": "uint16",
+          "Offset": 132,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_minalloc",
+          "Type": "uint16",
+          "Offset": 134,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_maxalloc",
+          "Type": "uint16",
+          "Offset": 136,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_ss",
+          "Type": "uint16",
+          "Offset": 138,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_sp",
+          "Type": "uint16",
+          "Offset": 140,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_csum",
+          "Type": "uint16",
+          "Offset": 142,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_ip",
+          "Type": "uint16",
+          "Offset": 144,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_cs",
+          "Type": "uint16",
+          "Offset": 146,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_lfarlc",
+          "Type": "uint16",
+          "Offset": 148,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_ovno",
+          "Type": "uint16",
+          "Offset": 150,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_oemid",
+          "Type": "uint16",
+          "Offset": 152,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_oeminfo",
+          "Type": "uint16",
+          "Offset": 154,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "e_lfanew",
+          "Type": "uint32",
+          "Offset": 184,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        }
+      ]
+    },
+    {
+      "Name": "PE Signature",
+      "Type": "struct",
+      "Sequential": false,
+      "Repeating": false,
+      "StepSize": 0,
+      "FixedCount": null,
+      "CountField": null,
+      "BaseRepeatOffset": 0,
+      "Fields": [
+        {
+          "Name": "PE Signature",
+          "Type": "struct",
+          "Offset": 0,
+          "Length": 2493080,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PEMagic",
+          "Type": "bytes",
+          "Offset": 120,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        }
+      ]
+    },
+    {
+      "Name": "COFF File Header",
+      "Type": "struct",
+      "Sequential": false,
+      "Repeating": false,
+      "StepSize": 0,
+      "FixedCount": null,
+      "CountField": null,
+      "BaseRepeatOffset": 0,
+      "Fields": [
+        {
+          "Name": "COFF File Header",
+          "Type": "struct",
+          "Offset": 0,
+          "Length": 2493080,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Machine",
+          "Type": "uint16",
+          "Offset": 124,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfSections",
+          "Type": "uint16",
+          "Offset": 126,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "TimeDateStamp",
+          "Type": "uint32",
+          "Offset": 128,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToSymbolTable",
+          "Type": "uint32",
+          "Offset": 132,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfSymbols",
+          "Type": "uint32",
+          "Offset": 136,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfOptionalHeader",
+          "Type": "uint16",
+          "Offset": 140,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Characteristics",
+          "Type": "uint16",
+          "Offset": 142,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        }
+      ]
+    },
+    {
+      "Name": "Optional Header (Standard)",
+      "Type": "struct",
+      "Sequential": false,
+      "Repeating": false,
+      "StepSize": 0,
+      "FixedCount": null,
+      "CountField": null,
+      "BaseRepeatOffset": 0,
+      "Fields": [
+        {
+          "Name": "Optional Header (Standard)",
+          "Type": "struct",
+          "Offset": 0,
+          "Length": 2493080,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Magic",
+          "Type": "uint16",
+          "Offset": 144,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "LinkerVersion",
+          "Type": "uint16",
+          "Offset": 146,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfCode",
+          "Type": "uint32",
+          "Offset": 148,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfInitializedData",
+          "Type": "uint32",
+          "Offset": 152,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfUninitializedData",
+          "Type": "uint32",
+          "Offset": 156,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "AddressOfEntryPoint",
+          "Type": "uint32",
+          "Offset": 160,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "BaseOfCode",
+          "Type": "uint32",
+          "Offset": 164,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        }
+      ]
+    },
+    {
+      "Name": "Section Table (10 entries)",
+      "Type": "struct",
+      "Sequential": false,
+      "Repeating": false,
+      "StepSize": 0,
+      "FixedCount": null,
+      "CountField": null,
+      "BaseRepeatOffset": 0,
+      "Fields": [
+        {
+          "Name": "Section Table (10 entries)",
+          "Type": "struct",
+          "Offset": 384,
+          "Length": 400,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": ".text",
+          "Type": "struct",
+          "Offset": 384,
+          "Length": 40,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Name",
+          "Type": "ascii",
+          "Offset": 384,
+          "Length": 8,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualSize",
+          "Type": "uint32",
+          "Offset": 392,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualAddress",
+          "Type": "uint32",
+          "Offset": 396,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfRawData",
+          "Type": "uint32",
+          "Offset": 400,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRawData",
+          "Type": "uint32",
+          "Offset": 404,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Characteristics",
+          "Type": "uint32",
+          "Offset": 420,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRelocations",
+          "Type": "uint32",
+          "Offset": 408,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToLinenumbers",
+          "Type": "uint32",
+          "Offset": 412,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfRelocations",
+          "Type": "uint16",
+          "Offset": 416,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfLinenumbers",
+          "Type": "uint16",
+          "Offset": 418,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": ".rdata",
+          "Type": "struct",
+          "Offset": 424,
+          "Length": 40,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Name",
+          "Type": "ascii",
+          "Offset": 424,
+          "Length": 8,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualSize",
+          "Type": "uint32",
+          "Offset": 432,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualAddress",
+          "Type": "uint32",
+          "Offset": 436,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfRawData",
+          "Type": "uint32",
+          "Offset": 440,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRawData",
+          "Type": "uint32",
+          "Offset": 444,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Characteristics",
+          "Type": "uint32",
+          "Offset": 460,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRelocations",
+          "Type": "uint32",
+          "Offset": 448,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToLinenumbers",
+          "Type": "uint32",
+          "Offset": 452,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfRelocations",
+          "Type": "uint16",
+          "Offset": 456,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfLinenumbers",
+          "Type": "uint16",
+          "Offset": 458,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": ".data",
+          "Type": "struct",
+          "Offset": 464,
+          "Length": 40,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Name",
+          "Type": "ascii",
+          "Offset": 464,
+          "Length": 8,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualSize",
+          "Type": "uint32",
+          "Offset": 472,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualAddress",
+          "Type": "uint32",
+          "Offset": 476,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfRawData",
+          "Type": "uint32",
+          "Offset": 480,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRawData",
+          "Type": "uint32",
+          "Offset": 484,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Characteristics",
+          "Type": "uint32",
+          "Offset": 500,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRelocations",
+          "Type": "uint32",
+          "Offset": 488,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToLinenumbers",
+          "Type": "uint32",
+          "Offset": 492,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfRelocations",
+          "Type": "uint16",
+          "Offset": 496,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfLinenumbers",
+          "Type": "uint16",
+          "Offset": 498,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": ".pdata",
+          "Type": "struct",
+          "Offset": 504,
+          "Length": 40,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Name",
+          "Type": "ascii",
+          "Offset": 504,
+          "Length": 8,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualSize",
+          "Type": "uint32",
+          "Offset": 512,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualAddress",
+          "Type": "uint32",
+          "Offset": 516,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfRawData",
+          "Type": "uint32",
+          "Offset": 520,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRawData",
+          "Type": "uint32",
+          "Offset": 524,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Characteristics",
+          "Type": "uint32",
+          "Offset": 540,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRelocations",
+          "Type": "uint32",
+          "Offset": 528,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToLinenumbers",
+          "Type": "uint32",
+          "Offset": 532,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfRelocations",
+          "Type": "uint16",
+          "Offset": 536,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfLinenumbers",
+          "Type": "uint16",
+          "Offset": 538,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": ".fptable",
+          "Type": "struct",
+          "Offset": 544,
+          "Length": 40,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Name",
+          "Type": "ascii",
+          "Offset": 544,
+          "Length": 8,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualSize",
+          "Type": "uint32",
+          "Offset": 552,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualAddress",
+          "Type": "uint32",
+          "Offset": 556,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfRawData",
+          "Type": "uint32",
+          "Offset": 560,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRawData",
+          "Type": "uint32",
+          "Offset": 564,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Characteristics",
+          "Type": "uint32",
+          "Offset": 580,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRelocations",
+          "Type": "uint32",
+          "Offset": 568,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToLinenumbers",
+          "Type": "uint32",
+          "Offset": 572,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfRelocations",
+          "Type": "uint16",
+          "Offset": 576,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfLinenumbers",
+          "Type": "uint16",
+          "Offset": 578,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": ".tls",
+          "Type": "struct",
+          "Offset": 584,
+          "Length": 40,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Name",
+          "Type": "ascii",
+          "Offset": 584,
+          "Length": 8,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualSize",
+          "Type": "uint32",
+          "Offset": 592,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualAddress",
+          "Type": "uint32",
+          "Offset": 596,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfRawData",
+          "Type": "uint32",
+          "Offset": 600,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRawData",
+          "Type": "uint32",
+          "Offset": 604,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Characteristics",
+          "Type": "uint32",
+          "Offset": 620,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRelocations",
+          "Type": "uint32",
+          "Offset": 608,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToLinenumbers",
+          "Type": "uint32",
+          "Offset": 612,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfRelocations",
+          "Type": "uint16",
+          "Offset": 616,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfLinenumbers",
+          "Type": "uint16",
+          "Offset": 618,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "_RDATA",
+          "Type": "struct",
+          "Offset": 624,
+          "Length": 40,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Name",
+          "Type": "ascii",
+          "Offset": 624,
+          "Length": 8,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualSize",
+          "Type": "uint32",
+          "Offset": 632,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualAddress",
+          "Type": "uint32",
+          "Offset": 636,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfRawData",
+          "Type": "uint32",
+          "Offset": 640,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRawData",
+          "Type": "uint32",
+          "Offset": 644,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Characteristics",
+          "Type": "uint32",
+          "Offset": 660,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRelocations",
+          "Type": "uint32",
+          "Offset": 648,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToLinenumbers",
+          "Type": "uint32",
+          "Offset": 652,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfRelocations",
+          "Type": "uint16",
+          "Offset": 656,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfLinenumbers",
+          "Type": "uint16",
+          "Offset": 658,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "malloc_h",
+          "Type": "struct",
+          "Offset": 664,
+          "Length": 40,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Name",
+          "Type": "ascii",
+          "Offset": 664,
+          "Length": 8,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualSize",
+          "Type": "uint32",
+          "Offset": 672,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualAddress",
+          "Type": "uint32",
+          "Offset": 676,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfRawData",
+          "Type": "uint32",
+          "Offset": 680,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRawData",
+          "Type": "uint32",
+          "Offset": 684,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Characteristics",
+          "Type": "uint32",
+          "Offset": 700,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRelocations",
+          "Type": "uint32",
+          "Offset": 688,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToLinenumbers",
+          "Type": "uint32",
+          "Offset": 692,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfRelocations",
+          "Type": "uint16",
+          "Offset": 696,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfLinenumbers",
+          "Type": "uint16",
+          "Offset": 698,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": ".rsrc",
+          "Type": "struct",
+          "Offset": 704,
+          "Length": 40,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Name",
+          "Type": "ascii",
+          "Offset": 704,
+          "Length": 8,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualSize",
+          "Type": "uint32",
+          "Offset": 712,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualAddress",
+          "Type": "uint32",
+          "Offset": 716,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfRawData",
+          "Type": "uint32",
+          "Offset": 720,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRawData",
+          "Type": "uint32",
+          "Offset": 724,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Characteristics",
+          "Type": "uint32",
+          "Offset": 740,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRelocations",
+          "Type": "uint32",
+          "Offset": 728,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToLinenumbers",
+          "Type": "uint32",
+          "Offset": 732,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfRelocations",
+          "Type": "uint16",
+          "Offset": 736,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfLinenumbers",
+          "Type": "uint16",
+          "Offset": 738,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": ".reloc",
+          "Type": "struct",
+          "Offset": 744,
+          "Length": 40,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Name",
+          "Type": "ascii",
+          "Offset": 744,
+          "Length": 8,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualSize",
+          "Type": "uint32",
+          "Offset": 752,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "VirtualAddress",
+          "Type": "uint32",
+          "Offset": 756,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "SizeOfRawData",
+          "Type": "uint32",
+          "Offset": 760,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRawData",
+          "Type": "uint32",
+          "Offset": 764,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "Characteristics",
+          "Type": "uint32",
+          "Offset": 780,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToRelocations",
+          "Type": "uint32",
+          "Offset": 768,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "PointerToLinenumbers",
+          "Type": "uint32",
+          "Offset": 772,
+          "Length": 4,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfRelocations",
+          "Type": "uint16",
+          "Offset": 776,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        },
+        {
+          "Name": "NumberOfLinenumbers",
+          "Type": "uint16",
+          "Offset": 778,
+          "Length": 2,
+          "Endianness": null,
+          "OffsetFromField": null,
+          "LengthField": null
+        }
+      ]
+    }
+  ],
+  "SourcePath": "user",
+  "IsEnabled": true,
+  "LoadedAt": "2026-06-27T08:46:47.5855753Z"
+}

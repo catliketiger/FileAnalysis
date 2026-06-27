@@ -103,24 +103,67 @@
                 <ColumnDefinition Width="250" MinWidth="180"/>
             </Grid.ColumnDefinitions>
 
-            <!-- 左侧面板：结构树 + 文件元数据 -->
+            <!-- 左侧面板：结构树 + 分卷列表 + 文件元数据 -->
             <Border Grid.Column="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,4,0">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="*" MinHeight="120"/>
+                        <RowDefinition Height="*" MinHeight="80"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto" MinHeight="80"/>
+                        <RowDefinition Height="Auto" MinHeight="40" MaxHeight="120"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto" MinHeight="60"/>
                     </Grid.RowDefinitions>
+                    <!-- 结构树 -->
                     <Border Grid.Row="0" Background="{DynamicResource PanelHeaderBackgroundBrush}" Padding="8,4">
                         <TextBlock Text="结构树" FontWeight="Bold"/>
                     </Border>
                     <views:StructureTreeView Grid.Row="0" x:Name="StructTreeView"/>
 
+                    <!-- 分卷列表 -->
+                    <Border Grid.Row="2" Background="{DynamicResource PanelBackgroundBrush}"
+                            Padding="6,4" MaxHeight="120"
+                            Visibility="{Binding IsVolumeListVisible, Converter={StaticResource BoolToVisibility}}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="分卷文件" FontWeight="Bold" FontSize="11" Margin="0,0,0,2"/>
+                            <ListView Grid.Row="1" ItemsSource="{Binding VolumeList}" BorderThickness="0"
+                                      Background="Transparent"
+                                      SelectionMode="Single"
+                                      ScrollViewer.VerticalScrollBarVisibility="Visible"
+                                      ScrollViewer.CanContentScroll="True"
+                                      SelectedItem="{Binding SelectedVolumeItem}"
+                                      Name="VolumeListView"
+                                      SelectionChanged="VolumeList_SelectionChanged">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" FontSize="11" Text="{Binding Name}"/>
+                                            <TextBlock Grid.Column="1" FontSize="11" FontWeight="Bold"
+                                                       Text="[CD]" Foreground="DarkOrange"
+                                                       Visibility="{Binding HasCentralDir, Converter={StaticResource BoolToVisibility}}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </Border>
+
                     <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch"
                                   ShowsPreview="False" Background="Transparent"
                                   ResizeBehavior="PreviousAndNext"/>
+                    <GridSplitter Grid.Row="3" Height="4" HorizontalAlignment="Stretch"
+                                  ShowsPreview="False" Background="Transparent"
+                                  ResizeBehavior="PreviousAndNext"/>
 
-                    <Border Grid.Row="2" Background="{DynamicResource PanelBackgroundBrush}" Padding="6,4"
+                    <!-- 文件元数据 -->
+                    <Border Grid.Row="4" Background="{DynamicResource PanelBackgroundBrush}" Padding="6,4"
                             DataContext="{Binding FileMeta}">
                         <StackPanel TextBlock.FontSize="11">
                             <TextBlock Text="文件信息" FontWeight="Bold" Margin="0,0,0,4"

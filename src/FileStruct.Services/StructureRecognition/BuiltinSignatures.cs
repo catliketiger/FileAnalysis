@@ -41,6 +41,9 @@ public static class BuiltinSignatures
 
         // ═══ 压缩/归档 ═══
         new("ZIP", [0x50, 0x4B, 0x03, 0x04], description: "ZIP 压缩包"),
+        new("ZIP", [0x50, 0x4B, 0x01, 0x02], description: "ZIP 分卷 (末卷 CD)"),
+        new("ZIP", [0x50, 0x4B, 0x07, 0x08], description: "ZIP 分卷 (首段)"),
+        new("ZIP", [0x50, 0x4B, 0x30, 0x30], description: "ZIP 分卷 (临时)"),
         new("ZIP-Empty", [0x50, 0x4B, 0x05, 0x06], description: "ZIP 空归档"),
         new("RAR", [0x52, 0x61, 0x72, 0x21, 0x1A, 0x07], description: "RAR 压缩包 (v4)"),
         new("RAR5", [0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x01, 0x00], description: "RAR 压缩包 (v5)"),
@@ -49,7 +52,7 @@ public static class BuiltinSignatures
         new("XZ", [0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00], description: "XZ 压缩文件"),
         new("Zstd", [0x28, 0xB5, 0x2F, 0xFD], description: "Zstd 压缩文件"),
         new("7z", [0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C], description: "7z 压缩包"),
-        new("CAB", [0x49, 0x53, 0x63, 0x28], description: "CAB 压缩包"),
+        new("CAB", [0x4D, 0x53, 0x43, 0x46], description: "CAB 压缩包 (Microsoft Cabinet)"),
 
         // ═══ 可执行文件 ═══
         new("PE", [0x4D, 0x5A], description: "Windows PE 可执行文件"),
@@ -61,14 +64,25 @@ public static class BuiltinSignatures
         new("DEB", [0x21, 0x3C, 0x61, 0x72, 0x63, 0x68, 0x3E],
             description: "Debian 软件包"), // !<arch>
         new("RPM", [0xED, 0xAB, 0xEE, 0xDB], description: "RPM 软件包"),
+        new("TAR", [0x75, 0x73, 0x74, 0x61, 0x72], magicOffset: 0x101, minFileSize: 520,
+            description: "TAR 归档 (POSIX)"),
         new("DMG", [0x78, 0x01, 0x73, 0x0D, 0x62, 0x62, 0x60],
             description: "macOS 磁盘映像 (zlib)"),
+
+        // ═══ 浏览器扩展 ═══
+        new("CRX", [0x43, 0x72, 0x32, 0x34], minFileSize: 16,
+            description: "Chrome 扩展包 (CRX)"),
 
         // ═══ 文档 ═══
         new("PDF", [0x25, 0x50, 0x44, 0x46], description: "PDF 文档"),
         new("OLE2", [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1],
             description: "OLE2 复合文档 (DOC/XLS/PPT/MSI 等)"),
         new("RTF", [0x7B, 0x5C, 0x72, 0x74, 0x66], description: "RTF 文档"),
+
+        // ═══ 电子书 ═══
+        new("MOBI", [0x42, 0x4F, 0x4F, 0x4B, 0x4D, 0x4F, 0x42, 0x49],
+            magicOffset: 0x3C, minFileSize: 96,
+            description: "MOBI/AZW3 电子书 (PalmDB)"),
 
         // ═══ 字体 ═══
         new("TTF", [0x00, 0x01, 0x00, 0x00, 0x00], description: "TrueType 字体"),
@@ -104,5 +118,17 @@ public static class BuiltinSignatures
         new("RIFF", [0x52, 0x49, 0x46, 0x46], description: "RIFF 格式 (AVI/WAV 等)"),
         new("ISO", [0x43, 0x44, 0x30, 0x30, 0x31], magicOffset: 0x8001,
             description: "ISO 9660 光盘映像"),
+
+        // ═══ Python 字节码 (多版本共用 "PYC") ═══
+        new("PYC", [0x55, 0x0D, 0x0D, 0x0A], description: "Python 字节码 (3.8)"),
+        new("PYC", [0x61, 0x0D, 0x0D, 0x0A], description: "Python 字节码 (3.9)"),
+        new("PYC", [0x6F, 0x0D, 0x0D, 0x0A], description: "Python 字节码 (3.10)"),
+        new("PYC", [0xA7, 0x0D, 0x0D, 0x0A], description: "Python 字节码 (3.11)"),
+        new("PYC", [0x0B, 0x0C, 0x0D, 0x0A], description: "Python 字节码 (3.12)"),
+        new("PYC", [0x0D, 0x0D, 0x0D, 0x0A], description: "Python 字节码 (3.13)"),
+
+        // ═══ 游戏资源包 ═══
+        new("PAK", [0x50, 0x41, 0x43, 0x4B], minFileSize: 16,
+            description: "Unreal Engine 资源包 (PACK)"),
     };
 }

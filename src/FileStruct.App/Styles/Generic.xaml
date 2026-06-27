@@ -56,30 +56,68 @@
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
-                        <ListBox x:Name="PART_ListBox"
-                                 VirtualizingStackPanel.IsVirtualizing="True"
-                                 VirtualizingStackPanel.VirtualizationMode="Standard"
-                                 ScrollViewer.IsDeferredScrollingEnabled="True"
-                                 ScrollViewer.CanContentScroll="True"
-                                 ItemTemplate="{StaticResource HexRowTemplate}"
-                                 BorderThickness="0"
-                                 Background="{DynamicResource ContentBackgroundBrush}"
-                                 FontSize="13">
-                            <ListBox.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="选区开始" x:Name="CM_SelectStart"/>
-                                    <MenuItem Header="选区结束" x:Name="CM_SelectEnd"/>
-                                    <MenuItem Header="创建字段" x:Name="CM_CreateField"/>
-                                    <Separator/>
-                                    <MenuItem Header="添加书签" x:Name="CM_AddBookmark"/>
-                                </ContextMenu>
-                            </ListBox.ContextMenu>
-                            <ListBox.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel/>
-                                </ItemsPanelTemplate>
-                            </ListBox.ItemsPanel>
-                        </ListBox>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="20"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- ═══ 行内偏移标题行（固定，不滚动）═══ -->
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="*" MinWidth="300"/>
+                                    <ColumnDefinition Width="Auto" MinWidth="140"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- 偏移列：留空 -->
+                                <TextBlock Grid.Column="0" Margin="4,0"/>
+
+                                <!-- Hex 列标题：0~F -->
+                                <Border Grid.Column="1" Margin="4,0,0,0" Padding="0"
+                                        BorderThickness="0,0,0,1"
+                                        BorderBrush="{DynamicResource BorderBrush}">
+                                    <ItemsControl ItemsSource="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=HexHeaderItems}"
+                                                  ItemTemplate="{StaticResource ByteCellTemplate}"
+                                                  HorizontalAlignment="Left">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                    </ItemsControl>
+                                </Border>
+
+                                <!-- ASCII 列上方：保持空白 -->
+                            </Grid>
+
+                            <!-- ═══ 数据区 ═══ -->
+                            <ListBox Grid.Row="1"
+                                     x:Name="PART_ListBox"
+                                     VirtualizingStackPanel.IsVirtualizing="True"
+                                     VirtualizingStackPanel.VirtualizationMode="Standard"
+                                     ScrollViewer.IsDeferredScrollingEnabled="True"
+                                     ScrollViewer.CanContentScroll="True"
+                                     ItemTemplate="{StaticResource HexRowTemplate}"
+                                     BorderThickness="0"
+                                     Background="{DynamicResource ContentBackgroundBrush}"
+                                     FontSize="13">
+                                <ListBox.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="选区开始" x:Name="CM_SelectStart"/>
+                                        <MenuItem Header="选区结束" x:Name="CM_SelectEnd"/>
+                                        <MenuItem Header="创建字段" x:Name="CM_CreateField"/>
+                                        <Separator/>
+                                        <MenuItem Header="添加书签" x:Name="CM_AddBookmark"/>
+                                    </ContextMenu>
+                                </ListBox.ContextMenu>
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                            </ListBox>
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

@@ -52,6 +52,9 @@ public partial class StructureTreeView : UserControl
         if (e.NewValue is TreeItemViewModel item &&
             DataContext is MainViewModel mainVm)
         {
+            // 搜索导航守卫：搜索时不要用树节点的范围覆盖搜索高亮
+            if (mainVm.IsSearchNavigating) return;
+
             _isSyncingSelection = true;
             // 内部导航标识：防止 HexView 回馈时 SelectNodeByOffset 覆盖树选中
             using var guard = mainVm.StructureTree.BeginInternalNavigation();
@@ -86,12 +89,27 @@ public partial class StructureTreeView : UserControl
             _contextNode = tvi?.DataContext as TreeItemViewModel;
             if (_contextNode != null)
             {
-                // 仅对 ZIP 节点显示「展开压缩包」
+                // 对 ZIP/EPUB 节点显示「展开内容」
                 if (_menuExpandZip != null && DataContext is MainViewModel mainVm)
                 {
                     var buffer = mainVm.HexEditor.Buffer;
-                    _menuExpandZip.Visibility = buffer != null && IsArchiveNode(_contextNode.Node, buffer)
-                        ? Visibility.Visible : Visibility.Collapsed;
+                    if (buffer != null && IsArchiveNode(_contextNode.Node, buffer))
+                    {
+                        _menuExpandZip.Visibility = Visibility.Visible;
+                        // 根据文件类型定制菜单文字
+                        var nodeName = _contextNode.Node.Parent?.Name ?? "";
+                        var isEpub = nodeName.Contains("EPUB", StringComparison.OrdinalIgnoreCase);
+                        var isCrx = nodeName.Contains("CRX", StringComparison.OrdinalIgnoreCase);
+                        var isPak = nodeName.Contains("PAK", StringComparison.OrdinalIgnoreCase);
+                        _menuExpandZip.Header = isEpub ? "展开电子书内容"
+                            : isCrx ? "展开扩展包"
+                            : isPak ? "展开资源包"
+                            : "展开压缩包";
+                    }
+                    else
+                    {
+                        _menuExpandZip.Visibility = Visibility.Collapsed;
+                    }
                 }
                 return;
             }
@@ -279,13 +297,29 @@ public partial class StructureTreeView : UserControl
 
     // ===== ZIP 展开 =====
 
-    /// <summary>判断节点数据是否以 ZIP 魔数开头</summary>
+    /// <summary>判断节点数据是否为可展开的压缩包格式</summary>
     private static bool IsArchiveNode(StructureNode node, BinaryBuffer buffer)
     {
         if (buffer == null || node.Offset < 0) return false;
         if (node.Offset + 4 > buffer.Length) return false;
-        // ZIP: PK\x03\x04
-        if (buffer.ReadUInt32(node.Offset, true) == 0x04034B50) return true;
+        // ZIP: PK\x03\x04 (LH) / PK\x01\x02 (CD) / PK\x05\x06 (EOCD) / 分卷签名
+        var sig = buffer.ReadUInt32(node.Offset, true);
+        if (sig == 0x04034B50 || sig == 0x02014B50 || sig == 0x06054B50 ||
+            sig == 0x08074B50 || sig == 0x30304B50) return true;
+        // CRX: Cr24 (Chrome 扩展)
+        if (buffer.ReadUInt32(node.Offset, true) == 0x34327243) return true;
+        // PAK: PACK (Unreal 资源包)
+        if (buffer.ReadUInt32(node.Offset, true) == 0x4B434150) return true;
+        // CAB: MSCF (Microsoft Cabinet)
+        if (buffer.ReadUInt32(node.Offset, true) == 0x4643534D) return true;
+        // 7z: "7z\xBC\xAF" header
+        if (node.Offset + 6 <= buffer.Length &&
+            buffer.ReadByte(node.Offset) == 0x37 && buffer.ReadByte(node.Offset + 1) == 0x7A &&
+            buffer.ReadByte(node.Offset + 2) == 0xBC && buffer.ReadByte(node.Offset + 3) == 0xAF) return true;
+        // GZip: 0x1F 0x8B 0x08
+        if (node.Offset + 3 <= buffer.Length &&
+            buffer.ReadByte(node.Offset) == 0x1F && buffer.ReadByte(node.Offset + 1) == 0x8B &&
+            buffer.ReadByte(node.Offset + 2) == 0x08) return true;
         // RAR: Rar!\x1A\x07 (6 bytes)
         if (node.Offset + 6 <= buffer.Length && buffer.ReadUInt32(node.Offset, true) == 0x21726152 &&
             buffer.ReadUInt16(node.Offset + 4, true) == 0x071A) return true;
@@ -314,9 +348,38 @@ public partial class StructureTreeView : UserControl
         {
             // 检测归档类型
             var sig32 = buffer.ReadUInt32(item.Node.Offset, true);
-            if (sig32 == 0x04034B50)
+            if (sig32 == 0x04034B50 || sig32 == 0x02014B50 || sig32 == 0x06054B50 ||
+                sig32 == 0x08074B50 || sig32 == 0x30304B50)
             {
                 ExpandZipArchive(item, buffer, mainVm);
+            }
+            else if (sig32 == 0x34327243) // "Cr24" (Chrome 扩展)
+            {
+                ExpandCrxArchive(item, buffer, mainVm);
+            }
+            else if (sig32 == 0x4B434150) // "PACK" (Unreal 资源包)
+            {
+                ExpandPakArchive(item, buffer, mainVm);
+            }
+            else if (sig32 == 0x4643534D) // "MSCF" (CAB 压缩包)
+            {
+                ExpandCabArchive(item, buffer, mainVm);
+            }
+            else if (sig32 == 0xAFBC7A37) // "7z\xBC\xAF" (7-Zip)
+            {
+                Expand7zArchive(item, buffer, mainVm);
+            }
+            else if (buffer.ReadByte(item.Node.Offset) == 0x1F && buffer.ReadByte(item.Node.Offset + 1) == 0x8B && buffer.ReadByte(item.Node.Offset + 2) == 0x08)
+            {
+                mainVm.StatusText = "GZip 为压缩格式，不支持展开（.tar.gz 需要 LZ77 解压）";
+            }
+            else if (buffer.Length >= 263 && buffer.ReadByte(item.Node.Offset + 257) == 0x75 &&
+                     buffer.ReadByte(item.Node.Offset + 258) == 0x73 &&
+                     buffer.ReadByte(item.Node.Offset + 259) == 0x74 &&
+                     buffer.ReadByte(item.Node.Offset + 260) == 0x61 &&
+                     buffer.ReadByte(item.Node.Offset + 261) == 0x72) // "ustar" @ offset 257
+            {
+                ExpandTarArchive(item, buffer, mainVm);
             }
             else if (sig32 == 0x21726152) // "Rar!"
             {
@@ -354,6 +417,8 @@ public partial class StructureTreeView : UserControl
         // 2. 解析 EOCD
         var totalEntries = buffer.ReadUInt16(eocdOff + 8, true);
         var cdOffset = buffer.ReadUInt32(eocdOff + 16, true);
+        var numDisk = buffer.ReadUInt16(eocdOff + 4, true);
+        var numDiskCd = buffer.ReadUInt16(eocdOff + 6, true);
         if (totalEntries == 0) { mainVm.StatusText = "压缩包为空"; return; }
 
             // 3. 解析中央目录条目 → 收集 (localHeaderOffset, compSize, uncompSize, method, filename)
@@ -378,12 +443,15 @@ public partial class StructureTreeView : UserControl
                 var commentLen = buffer.ReadUInt16(cdPos + 32, true);
                 var localHeaderOff = buffer.ReadUInt32(cdPos + 42, true);
 
-                // 读文件名
+                // 读文件名（bit 11=1 时 UTF-8）
                 string fileName;
                 if (nameLen > 0)
                 {
                     var nameBytes = buffer.ReadBytes(cdPos + 46, nameLen);
-                    fileName = System.Text.Encoding.UTF8.GetString(nameBytes);
+                    var hasUtf8 = (flags & (1 << 11)) != 0;
+                    fileName = hasUtf8
+                        ? System.Text.Encoding.UTF8.GetString(nameBytes)
+                        : System.Text.Encoding.GetEncoding(0).GetString(nameBytes);
                 }
                 else
                 {
@@ -401,6 +469,7 @@ public partial class StructureTreeView : UserControl
                 }
 
                 var dataLen = compSize > 0 ? (long)compSize : (long)uncompSize;
+                var diskStart = buffer.ReadUInt16(cdPos + 34, true);
                 var displayName = $"{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
                 var desc = isEncrypted ? $"[加密] {methodStr}: {compSize} → {uncompSize} bytes" : $"{methodStr}: {compSize} → {uncompSize} bytes";
 
@@ -470,11 +539,12 @@ public partial class StructureTreeView : UserControl
                 var hdrFlagsInt = (int)hdrFlags;
 
                 ulong dataAreaSize = 0;
+                ulong extraAreaSize = 0;
                 if ((hdrFlagsInt & 0x0001) != 0) // ExtraAreaSize
                 {
-                    var (extraSize, extraLen) = ReadRar5Vint(hdrBytes, off);
-                    off += extraLen;
-                    off += (int)extraSize;
+                    var (es, esLen) = ReadRar5Vint(hdrBytes, off);
+                    off += esLen;
+                    extraAreaSize = es;
                 }
                 if ((hdrFlagsInt & 0x0002) != 0) // DataAreaSize
                 {
@@ -516,11 +586,25 @@ public partial class StructureTreeView : UserControl
                     off += ftimeLen;
 
                     string fileName;
-                    if (off < hdrBytes.Length)
+                    long bodyEnd = hdrBytes.Length - (long)extraAreaSize;
+                    if (off < bodyEnd)
                     {
-                        fileName = System.Text.Encoding.UTF8.GetString(hdrBytes, off, hdrBytes.Length - off);
-                        var nullIdx = fileName.IndexOf('\0');
-                        if (nullIdx >= 0) fileName = fileName[..nullIdx];
+                        // RAR5 文件名是 body 中最后一个可打印 ASCII/UTF-8 片段，
+                        // 文件头里 ftime 后可能有 data_version/CRC32/host_os/name_len 等可选字段
+                        var bodyLen = (int)(bodyEnd - off);
+                        var body = new byte[bodyLen];
+                        Array.Copy(hdrBytes, off, body, 0, bodyLen);
+
+                        // 从右向左找最后一个可打印字符区域作为文件名
+                        int nameEnd = bodyLen;
+                        while (nameEnd > 0 && body[nameEnd - 1] < 0x20) nameEnd--;
+                        int nameStart = nameEnd;
+                        while (nameStart > 0 && body[nameStart - 1] >= 0x20) nameStart--;
+
+                        if (nameStart < nameEnd && nameEnd - nameStart <= 512)
+                            fileName = System.Text.Encoding.UTF8.GetString(body, nameStart, nameEnd - nameStart);
+                        else
+                            fileName = $"(file_{count})";
                     }
                     else fileName = $"(file_{count})";
 
@@ -681,6 +765,429 @@ public partial class StructureTreeView : UserControl
                 BuildArchiveTree(item.Node, entries, mainVm);
             else
                 mainVm.StatusText = "未找到RAR4压缩条目";
+        }
+
+        /// <summary>展开 Chrome 扩展包 (CRX) — 计算 ZIP 数据偏移后复用 ZIP 展开逻辑</summary>
+        private void ExpandCrxArchive(TreeItemViewModel item, BinaryBuffer buffer, MainViewModel mainVm)
+        {
+            if (buffer.Length < 16) { mainVm.StatusText = "CRX 文件头部不完整"; return; }
+
+            var version = buffer.ReadUInt32(4, true);
+            long zipDataOffset;
+
+            if (version == 2)
+            {
+                var pubKeyLen = buffer.ReadUInt32(8, true);
+                var sigLen = buffer.ReadUInt32(12, true);
+                zipDataOffset = 16L + pubKeyLen + sigLen;
+                System.Diagnostics.Debug.WriteLine($"[CRX] v2 pubKeyLen={pubKeyLen} sigLen={sigLen} zipOffset=0x{zipDataOffset:X}");
+            }
+            else if (version == 3)
+            {
+                var headerLen = buffer.ReadUInt32(8, true);
+                zipDataOffset = 12L + headerLen;
+                System.Diagnostics.Debug.WriteLine($"[CRX] v3 headerLen={headerLen} zipOffset=0x{zipDataOffset:X}");
+            }
+            else
+            {
+                mainVm.StatusText = $"不支持的 CRX 版本: {version}";
+                return;
+            }
+
+            if (zipDataOffset >= buffer.Length) { mainVm.StatusText = "CRX 头部超出文件范围"; return; }
+
+            // 验证 ZIP 魔数
+            if (zipDataOffset + 4 > buffer.Length || buffer.ReadUInt32(zipDataOffset, true) != 0x04034B50)
+            {
+                mainVm.StatusText = "CRX 中未找到有效的 ZIP 数据";
+                return;
+            }
+
+            // 复用 ZIP 展开逻辑，但所有偏移需要加上 zipDataOffset
+            ExpandZipArchiveWithOffset(item, buffer, mainVm, zipDataOffset);
+        }
+
+        /// <summary>带偏移量的 ZIP 展开 — EOCD/Central Directory/Local Header 读取时增加 baseOffset</summary>
+        private void ExpandZipArchiveWithOffset(TreeItemViewModel item, BinaryBuffer buffer, MainViewModel mainVm, long baseOffset)
+        {
+            // 扫描整体文件尾部找 EOCD（EOCD 始终在文件绝对末端）
+            var eocdOff = FindEocd(buffer);
+            if (eocdOff < 0) { mainVm.StatusText = "无法定位 ZIP 目录"; return; }
+
+            var totalEntries = buffer.ReadUInt16(eocdOff + 8, true);
+            var cdRelOffset = buffer.ReadUInt32(eocdOff + 16, true);
+            var cdOffset = baseOffset + cdRelOffset; // 调整：加上 ZIP 数据起始偏移
+            if (totalEntries == 0) { mainVm.StatusText = "压缩包为空"; return; }
+
+            var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
+            long cdPos = cdOffset;
+            int count = 0;
+            bool hasEncrypted = false;
+
+            while (count < totalEntries && count < 10000 && cdPos + 46 <= buffer.Length)
+            {
+                var sig = buffer.ReadUInt32(cdPos, true);
+                if (sig != 0x02014B50) break;
+
+                var flags = buffer.ReadUInt16(cdPos + 8, true);
+                var isEncrypted = (flags & 1) != 0;
+                if (isEncrypted) hasEncrypted = true;
+
+                var compMethod = buffer.ReadUInt16(cdPos + 10, true);
+                var compSize = buffer.ReadUInt32(cdPos + 20, true);
+                var uncompSize = buffer.ReadUInt32(cdPos + 24, true);
+                var nameLen = buffer.ReadUInt16(cdPos + 28, true);
+                var extraLen = buffer.ReadUInt16(cdPos + 30, true);
+                var commentLen = buffer.ReadUInt16(cdPos + 32, true);
+                var localHeaderRelOff = buffer.ReadUInt32(cdPos + 42, true);
+                var localHeaderOff = baseOffset + localHeaderRelOff; // 调整
+
+                string fileName;
+                if (nameLen > 0)
+                {
+                    var nameBytes = buffer.ReadBytes(cdPos + 46, nameLen);
+                    fileName = System.Text.Encoding.UTF8.GetString(nameBytes);
+                }
+                else
+                {
+                    fileName = $"(entry_{count})";
+                }
+
+                long dataOffset = 0;
+                var methodStr = compMethod switch { 0 => "Stored", 8 => "Deflate", 12 => "BZIP2", _ => $"M{compMethod}" };
+
+                if (localHeaderOff + 30 <= buffer.Length)
+                {
+                    var localFnLen = buffer.ReadUInt16(localHeaderOff + 26, true);
+                    var localExtraLen = buffer.ReadUInt16(localHeaderOff + 28, true);
+                    dataOffset = localHeaderOff + 30 + localFnLen + localExtraLen;
+                }
+
+                var dataLen = compSize > 0 ? (long)compSize : (long)uncompSize;
+                var displayName = $"{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
+                var desc = isEncrypted ? $"[加密] {methodStr}: {compSize} → {uncompSize} bytes" : $"{methodStr}: {compSize} → {uncompSize} bytes";
+
+                entries.Add((dataOffset, dataLen, displayName, desc, fileName, isEncrypted));
+                cdPos += 46 + nameLen + extraLen + commentLen;
+                count++;
+            }
+
+            if (hasEncrypted)
+            {
+                var pwd = Microsoft.VisualBasic.Interaction.InputBox(
+                    "该压缩包包含加密文件，请输入密码：", "压缩包密码", "");
+                if (!string.IsNullOrEmpty(pwd))
+                    mainVm.StatusText = $"已输入密码，共展示条目（暂不支持导出加密文件）";
+            }
+
+            BuildArchiveTree(item.Node, entries, mainVm);
+        }
+
+        /// <summary>展开 Unreal Engine 资源包 (PAK) — 解析文件索引列举所有条目</summary>
+        private void ExpandPakArchive(TreeItemViewModel item, BinaryBuffer buffer, MainViewModel mainVm)
+        {
+            if (buffer.Length < 20) { mainVm.StatusText = "PAK 文件头部不完整"; return; }
+
+            var version = buffer.ReadUInt32(4, true);
+
+            // 扫描尾部查找 "PACK" 魔数
+            long trailerOffset = -1;
+            for (long i = buffer.Length - 8; i >= buffer.Length - 64 && i >= 0; i--)
+            {
+                if (buffer.ReadUInt32(i, true) == 0x4B434150)
+                { trailerOffset = i; break; }
+            }
+            if (trailerOffset < 0) { mainVm.StatusText = "无法定位 PAK 尾部"; return; }
+
+            // 读 indexOffset
+            long indexOffset;
+            if (version >= 9) // UE5
+            {
+                if (trailerOffset - 16 < 0) return;
+                indexOffset = (long)buffer.ReadUInt64(trailerOffset - 16, true);
+            }
+            else
+            {
+                if (trailerOffset - 8 < 0) return;
+                indexOffset = (long)buffer.ReadUInt64(trailerOffset - 8, true);
+            }
+            if (indexOffset < 0 || indexOffset >= buffer.Length) { mainVm.StatusText = "无效的 PAK 索引偏移"; return; }
+
+            // 读 MountPoint
+            long pos = indexOffset;
+            string mountPoint = "";
+            if (pos + 4 <= buffer.Length)
+            {
+                var mountLen = buffer.ReadInt32(pos, true);
+                if (mountLen > 0 && mountLen < 1024 && pos + 4 + mountLen <= buffer.Length)
+                {
+                    mountPoint = System.Text.Encoding.UTF8.GetString(buffer.ReadBytes(pos + 4, mountLen));
+                    pos += 4 + mountLen;
+                }
+                else pos += 4;
+            }
+
+            // 读文件数量
+            long fileCount;
+            if (version >= 9) { if (pos + 8 > buffer.Length) return; fileCount = (long)buffer.ReadUInt64(pos, true); pos += 8; }
+            else { if (pos + 4 > buffer.Length) return; fileCount = buffer.ReadUInt32(pos, true); pos += 4; }
+
+            if (fileCount <= 0 || fileCount > 1000000) { mainVm.StatusText = "PAK 文件数量异常"; return; }
+
+            var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
+            long lastGoodOffset = pos;
+            for (int i = 0; i < fileCount && pos + 4 <= buffer.Length; i++)
+            {
+                var fnLen = buffer.ReadInt32(pos, true);
+                if (fnLen < 0 || fnLen > 1024) break;
+                if (pos + 4 + fnLen + 40 > buffer.Length) break;
+
+                var fileName = System.Text.Encoding.UTF8.GetString(buffer.ReadBytes(pos + 4, fnLen));
+                pos += 4 + fnLen;
+
+                var fileOffset = (long)buffer.ReadUInt64(pos, true); pos += 8;
+                var compressedSize = (long)buffer.ReadUInt64(pos, true); pos += 8;
+                var uncompressedSize = (long)buffer.ReadUInt64(pos, true); pos += 8;
+                var compressionMethod = buffer.ReadUInt32(pos, true); pos += 4;
+
+                var methodStr = compressionMethod switch
+                {
+                    0 => "None", 1 => "Zlib", 2 => "Gzip",
+                    3 => "Oodle", 4 => "LZ4",
+                    _ => $"M{compressionMethod}",
+                };
+                var desc = $"{methodStr}: {compressedSize} → {uncompressedSize} bytes";
+                var displayName = $"{fileName}  [{methodStr}]  {FormatSize(uncompressedSize)}";
+                entries.Add((fileOffset, compressedSize, displayName, desc, fileName, false));
+                pos += 20; // skip hash (20 bytes SHA1)
+                lastGoodOffset = pos;
+
+                if (entries.Count >= 50000) break; // 安全上限
+            }
+
+            if (entries.Count > 0)
+            {
+                mainVm.StatusText = $"PAK 展开完成，共 {entries.Count} 个条目 (mount: {mountPoint})";
+                BuildArchiveTree(item.Node, entries, mainVm);
+            }
+            else
+            {
+                mainVm.StatusText = "PAK 中未找到有效条目";
+            }
+        }
+
+        /// <summary>展开 CAB 压缩包 — 解析 CFFILE 条目列表</summary>
+        private void ExpandCabArchive(TreeItemViewModel item, BinaryBuffer buffer, MainViewModel mainVm)
+        {
+            if (buffer.Length < 36) { mainVm.StatusText = "CAB 文件头部不完整"; return; }
+
+            var filesOffset = buffer.ReadUInt32(12, true);
+            var numFiles = buffer.ReadUInt16(24, true);
+            var numFolders = buffer.ReadUInt16(22, true);
+
+            if (numFiles <= 0 || filesOffset < 36 || filesOffset >= buffer.Length)
+            { mainVm.StatusText = "无效的 CAB 文件索引"; return; }
+
+            var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
+            long pos = filesOffset;
+
+            for (int i = 0; i < numFiles && pos + 8 <= buffer.Length; i++)
+            {
+                var fileSize = buffer.ReadUInt32(pos, true);
+                var fileOffset = buffer.ReadUInt32(pos + 4, true);
+                var folderIndex = buffer.ReadUInt16(pos + 8, true);
+
+                // 查找 null 终止的文件名（在 pos+14 之后）
+                var nameStart = pos + 14; // skip size(4)+offset(4)+folderIdx(2)+date(2)+time(2)+flags(2)=14
+                if (nameStart >= buffer.Length) break;
+
+                var maxLen = (int)Math.Min(buffer.Length - nameStart, 256);
+                var nameBytes = buffer.ReadBytes(nameStart, maxLen);
+                var nullIdx = Array.IndexOf<byte>(nameBytes, 0);
+                string fileName;
+                if (nullIdx > 0)
+                {
+                    fileName = System.Text.Encoding.ASCII.GetString(nameBytes, 0, nullIdx);
+                    pos = nameStart + nullIdx + 1;
+                }
+                else
+                {
+                    fileName = $"(file_{i})";
+                    pos = nameStart + maxLen;
+                }
+
+                var displayName = $"{fileName}  {FormatSize(fileSize)}";
+                var desc = $"文件夹[{folderIndex}] offset=0x{fileOffset:X}, size={fileSize}";
+                entries.Add((fileOffset, fileSize, displayName, desc, fileName, false));
+
+                if (entries.Count >= 50000) break;
+            }
+
+            if (entries.Count > 0)
+            {
+                mainVm.StatusText = $"CAB 展开完成，共 {entries.Count} 个文件 (文件夹: {numFolders})";
+                BuildArchiveTree(item.Node, entries, mainVm);
+            }
+            else
+            {
+                mainVm.StatusText = "CAB 中未找到有效文件条目";
+            }
+        }
+
+        /// <summary>展开 7z 压缩包 — 解析 Start Header 和 Next Header</summary>
+        private void Expand7zArchive(TreeItemViewModel item, BinaryBuffer buffer, MainViewModel mainVm)
+        {
+            if (buffer.Length < 32) { mainVm.StatusText = "7z 文件头部不完整"; return; }
+
+            var majorVer = buffer.ReadByte(6);
+            var minorVer = buffer.ReadByte(7);
+            var nextOff = (long)buffer.ReadUInt64(12, true);
+            var nextSize = (long)buffer.ReadUInt64(20, true);
+
+            if (nextOff == 0 || nextSize == 0) { mainVm.StatusText = "7z 文件中无附加头（空归档？）"; return; }
+
+            var nhStart = 32 + nextOff;
+            if (nhStart + nextSize > buffer.Length) { mainVm.StatusText = "7z Next Header 超出文件范围"; return; }
+
+            // 尝试在 Next Header 数据中提取文件条目（不完整，需要 LZMA 解压元数据）
+            // 这里提供基本的结构信息展示
+            var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
+
+            // Next Header 结构: type(1) + content
+            // type=0x17: PackedStreamsInfo
+            // type=0x02: StreamsInfo
+            // type=0x04: FilesInfo
+            // type=0x05: SubStreamsInfo
+            // type=0x00: Header end marker
+
+            long nhPos = nhStart;
+            long nhEnd = nhStart + nextSize;
+            int fileCount = 0;
+
+            // 简单扫描：找 FilesInfo (type=0x04)
+            while (nhPos + 1 <= nhEnd)
+            {
+                var type = buffer.ReadByte(nhPos);
+                nhPos++;
+                if (type == 0x00) break; // end
+
+                if (type == 0x04) // FilesInfo
+                {
+                    // FilesInfo: NumFiles + [name_offsets] + [names]
+                    if (nhPos + 4 > nhEnd) break;
+
+                    // NumFiles 是 UInt64 (vint-encoded in modern 7z, uint32 in old)
+                    var fileCount64 = buffer.ReadUInt64(nhPos, true);
+                    fileCount = (int)Math.Min(fileCount64, 100000L);
+                    nhPos += 8;
+
+                    if (fileCount > 0 && fileCount < 100000)
+                    {
+                        // 跳过 sizes/attrs/name_index 区域，直达文件名区（尾部）
+                        var nameDataStart = nhPos;
+                        // 尝试在剩余数据末尾找文件名
+                        var tailStart = Math.Max(nhPos, nhEnd - 8192);
+                        for (long scanPos = nhEnd - 1; scanPos >= tailStart && entries.Count < Math.Min(fileCount, 500); scanPos--)
+                        {
+                            if (buffer.ReadByte(scanPos) >= 0x20 && buffer.ReadByte(scanPos) < 0x7F)
+                            {
+                                // 向前找文件名开始
+                                long nameStart = scanPos;
+                                while (nameStart > tailStart && buffer.ReadByte(nameStart - 1) >= 0x20 && buffer.ReadByte(nameStart - 1) < 0x7F)
+                                    nameStart--;
+                                if (scanPos - nameStart >= 3 && scanPos - nameStart <= 256)
+                                {
+                                    var nameLen = (int)(scanPos - nameStart + 1);
+                                    var nameBytes = buffer.ReadBytes(nameStart, nameLen);
+                                    var name = System.Text.Encoding.UTF8.GetString(nameBytes);
+                                    if (name.Contains('.') || name.Contains('/'))
+                                    {
+                                        entries.Insert(0, (0, 0, $"{name}  [LZMA]  -", $"7z v{majorVer}.{minorVer:00}", name, false));
+                                    }
+                                    scanPos = nameStart - 1;
+                                }
+                            }
+                        }
+                    }
+                    break; // FilesInfo 之后不再有别的有用类型
+                }
+                else
+                {
+                    // 其他类型：跳过
+                    // 简单启发式：读到下一个 type 标记或文件尾
+                    var skipCount = 0;
+                    while (nhPos < nhEnd && skipCount < 4096)
+                    {
+                        var b = buffer.ReadByte(nhPos);
+                        if (b == 0x00 || b == 0x17 || b == 0x02 || b == 0x04 || b == 0x05)
+                            break;
+                        nhPos++;
+                        skipCount++;
+                    }
+                }
+            }
+
+            if (entries.Count > 0)
+            {
+                mainVm.StatusText = $"7z 展开完成 (v{majorVer}.{minorVer:00}), 共 {entries.Count} 个文件";
+                BuildArchiveTree(item.Node, entries, mainVm);
+            }
+            else if (fileCount > 0)
+            {
+                mainVm.StatusText = $"7z (v{majorVer}.{minorVer:00}) 含 {fileCount} 个文件（元数据为压缩格式，暂不支持完全列出）";
+            }
+            else
+            {
+                mainVm.StatusText = $"7z (v{majorVer}.{minorVer:00}) 文件 (NextHeader @ 0x{nhStart:X}, size={nextSize})";
+            }
+        }
+
+        /// <summary>展开 TAR 归档 — 顺序读取 512B 块</summary>
+        private void ExpandTarArchive(TreeItemViewModel item, BinaryBuffer buffer, MainViewModel mainVm)
+        {
+            if (buffer.Length < 512) { mainVm.StatusText = "TAR 文件头部不完整"; return; }
+
+            var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
+            long pos = 0;
+
+            while (pos + 512 <= buffer.Length)
+            {
+                // 零块 = 结束
+                bool isZero = true;
+                for (int i = 0; i < 512; i++)
+                    if (buffer.ReadByte(pos + i) != 0) { isZero = false; break; }
+                if (isZero) break;
+
+                var nameBytes = buffer.ReadBytes(pos, 100);
+                var fileName = System.Text.Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
+                var typeFlag = buffer.ReadByte(pos + 156);
+                var sizeStr = System.Text.Encoding.ASCII.GetString(buffer.ReadBytes(pos + 124, 12)).TrimEnd('\0');
+                long fileSize = sizeStr.Length > 0 ? System.Convert.ToInt64(sizeStr, 8) : 0;
+
+                if (typeFlag == 0 || typeFlag == '0' || typeFlag == '7') // normal file
+                {
+                    var roundedSize = ((fileSize + 511) / 512) * 512;
+                    var displayName = $"{fileName}  {FormatSize(fileSize)}";
+                    entries.Add((pos + 512, fileSize, displayName, $"TAR: {fileName}, size={fileSize}", fileName, false));
+                    pos += 512 + roundedSize;
+                }
+                else // directory or other type
+                {
+                    pos += 512 + ((fileSize + 511) / 512) * 512;
+                }
+
+                if (entries.Count >= 50000) break;
+            }
+
+            if (entries.Count > 0)
+            {
+                mainVm.StatusText = $"TAR 展开完成，共 {entries.Count} 个文件";
+                BuildArchiveTree(item.Node, entries, mainVm);
+            }
+            else
+            {
+                mainVm.StatusText = "TAR 中未找到有效文件条目";
+            }
         }
 
         private static void BuildArchiveTree(StructureNode parent,
