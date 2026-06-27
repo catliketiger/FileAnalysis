@@ -61,10 +61,13 @@ public partial class HexEditorView : UserControl
     private void GroupSizeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (sender is ComboBox combo && combo.SelectedItem is ComboBoxItem item &&
-            int.TryParse(item.Tag?.ToString(), out var groupSize) &&
-            DataContext is MainViewModel mainVm)
+            int.TryParse(item.Tag?.ToString(), out var groupSize))
         {
-            mainVm.HexEditor.ByteGroupSize = groupSize;
+            // 直接设 HexView DP（绕过绑定异步问题）
+            HexViewControl.ByteGroupSize = groupSize;
+            // 也同步 ViewModel 属性
+            if (DataContext is MainViewModel mainVm)
+                mainVm.HexEditor.ByteGroupSize = groupSize;
         }
     }
 }

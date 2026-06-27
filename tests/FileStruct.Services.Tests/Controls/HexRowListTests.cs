@@ -110,4 +110,62 @@ public class HexRowListTests : IDisposable
         Assert.Equal(16, row.Bytes.Length); // padded to 16
         Assert.False(row.IsCompleteRow);
     }
+
+    [Fact]
+    public void HexString_GroupSize2_Formatting()
+    {
+        // 16 bytes: 00 01 02 ... 0F
+        var data = new byte[16];
+        for (int i = 0; i < 16; i++) data[i] = (byte)i;
+        File.WriteAllBytes(_testFilePath, data);
+        using var buf = BinaryBuffer.LoadFromFile(_testFilePath);
+
+        var list = new HexRowList(buf, 16, 2);
+        var row = (HexRowData?)list[0];
+        Assert.NotNull(row);
+
+        // GroupSize=2: "0001 0203 0405 0607 0809 0A0B 0C0D 0E0F"
+        var parts = row!.HexString.Split(' ');
+        Assert.Equal(8, parts.Length);
+        Assert.Equal("0001", parts[0]);
+        Assert.Equal("0E0F", parts[^1]);
+    }
+
+    [Fact]
+    public void HexString_GroupSize4_Formatting()
+    {
+        var data = new byte[16];
+        for (int i = 0; i < 16; i++) data[i] = (byte)i;
+        File.WriteAllBytes(_testFilePath, data);
+        using var buf = BinaryBuffer.LoadFromFile(_testFilePath);
+
+        var list = new HexRowList(buf, 16, 4);
+        var row = (HexRowData?)list[0];
+        Assert.NotNull(row);
+
+        // GroupSize=4: "00010203 04050607 08090A0B 0C0D0E0F"
+        var parts = row!.HexString.Split(' ');
+        Assert.Equal(4, parts.Length);
+        Assert.Equal("00010203", parts[0]);
+        Assert.Equal("0C0D0E0F", parts[^1]);
+    }
+
+    [Fact]
+    public void HexString_GroupSize8_Formatting()
+    {
+        var data = new byte[16];
+        for (int i = 0; i < 16; i++) data[i] = (byte)i;
+        File.WriteAllBytes(_testFilePath, data);
+        using var buf = BinaryBuffer.LoadFromFile(_testFilePath);
+
+        var list = new HexRowList(buf, 16, 8);
+        var row = (HexRowData?)list[0];
+        Assert.NotNull(row);
+
+        // GroupSize=8: "0001020304050607 08090A0B0C0D0E0F"
+        var parts = row!.HexString.Split(' ');
+        Assert.Equal(2, parts.Length);
+        Assert.Equal("0001020304050607", parts[0]);
+        Assert.Equal("08090A0B0C0D0E0F", parts[^1]);
+    }
 }

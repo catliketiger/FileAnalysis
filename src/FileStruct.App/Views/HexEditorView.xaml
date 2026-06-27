@@ -25,7 +25,7 @@
             </ComboBox>
             <Separator Width="1" Background="{DynamicResource SeparatorBrush}" Margin="8,4"/>
             <CheckBox Content="小端" VerticalAlignment="Center"
-                      IsChecked="{Binding HexEditor.IsLittleEndian}"/>
+                      IsChecked="{Binding HexEditor.IsLittleEndian, Mode=TwoWay}"/>
         </StackPanel>
 
         <!-- 十六进制视图 -->
