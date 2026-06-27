@@ -64,7 +64,9 @@ public partial class HexEditorView : UserControl
             int.TryParse(item.Tag?.ToString(), out var groupSize))
         {
             // 直接设 HexView DP（绕过绑定异步问题）
-            HexViewControl.ByteGroupSize = groupSize;
+            // 注意：初始化时 HexViewControl 可能尚未加载，需判空
+            if (HexViewControl != null)
+                HexViewControl.ByteGroupSize = groupSize;
             // 也同步 ViewModel 属性
             if (DataContext is MainViewModel mainVm)
                 mainVm.HexEditor.ByteGroupSize = groupSize;
