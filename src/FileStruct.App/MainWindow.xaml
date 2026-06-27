@@ -67,7 +67,7 @@
         <!-- 工具栏 -->
         <ToolBar Grid.Row="1" Band="1">
             <Button Content="📂 打开文件" Command="{Binding OpenFileCommand}"/>
-            <Button Content="🔍 识别" Command="{Binding RecognizeCommand}"/>
+            <Button Content="🔍 重新识别" Command="{Binding RecognizeCommand}"/>
             <Separator/>
             <Button Content="💾 保存项目" Command="{Binding SaveProjectCommand}"/>
             <Separator/>

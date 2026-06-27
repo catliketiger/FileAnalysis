@@ -387,7 +387,7 @@ public partial class StructureTreeView : UserControl
                             Length = 0,
                             DataType = FieldDataType.Struct,
                             Confidence = 1.0,
-                            Source = StructureNodeSource.AutoDetected,
+                            Source = StructureNodeSource.UserCreated,
                         };
                         dirNodes[dirPath].AddChild(dirNode);
                         dirNodes[childPath] = dirNode;
@@ -403,7 +403,7 @@ public partial class StructureTreeView : UserControl
                     Length = dataLen,
                     DataType = FieldDataType.Bytes,
                     Confidence = 1.0,
-                    Source = StructureNodeSource.AutoDetected,
+                    Source = StructureNodeSource.UserCreated,
                     Description = desc,
                 };
                 dirNodes[dirPath].AddChild(fileNode);

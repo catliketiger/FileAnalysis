@@ -41,6 +41,7 @@ public static class BuiltinRuleProvider
         DebRule(),
         Ole2Rule(),
         RarRule(),
+        Rar5Rule(),
         PsdRule(),
         PdfRule(),
         OggRule(),
@@ -620,15 +621,26 @@ public static class BuiltinRuleProvider
             ], true),
         ]);
 
-    private static FormatRule RarRule() => CreateRule("RAR", "RAR 压缩包文件结构",
+    private static FormatRule RarRule() => CreateRule("RAR", "RAR 压缩包文件结构 (v4)",
         [([0x52, 0x61, 0x72, 0x21, 0x1A, 0x07], 0, 13)],
         [
-            ("RAR Header", [
+            ("RAR4 Header", [
                 ("Magic", "bytes", 0, 7, null),
                 ("HeaderCRC", "uint16", 7, 2, null),
                 ("HeaderType", "uint8", 9, 1, null),
                 ("HeaderFlags", "uint16", 10, 2, null),
                 ("ExtraSize", "uint16", 12, 2, null),
+                ("Body", "bytes", 14, 0x40, null),
+            ], false),
+        ]);
+
+    private static FormatRule Rar5Rule() => CreateRule("RAR5", "RAR 压缩包文件结构 (v5)",
+        [([0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x01, 0x00], 0, 7)],
+        [
+            ("RAR5 Header", [
+                ("Magic", "bytes", 0, 7, null),
+                ("Version", "uint16", 7, 2, null),
+                ("Body", "bytes", 9, 0x40, null),
             ], false),
         ]);
 
