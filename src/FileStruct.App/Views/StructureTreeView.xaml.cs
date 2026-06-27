@@ -89,7 +89,8 @@ public partial class StructureTreeView : UserControl
                 // 仅对 ZIP 节点显示「展开压缩包」
                 if (_menuExpandZip != null && DataContext is MainViewModel mainVm)
                 {
-                    _menuExpandZip.Visibility = IsArchiveNode(_contextNode.Node, mainVm.HexEditor.Buffer)
+                    var buffer = mainVm.HexEditor.Buffer;
+                    _menuExpandZip.Visibility = buffer != null && IsArchiveNode(_contextNode.Node, buffer)
                         ? Visibility.Visible : Visibility.Collapsed;
                 }
                 return;
@@ -752,7 +753,8 @@ public partial class StructureTreeView : UserControl
             // 清空原树，用导入的结构替换
             mainVm.StructureTree.Clear();
             mainVm.StructureTree.LoadTree(imported);
-            mainVm.StructureTree.RootNode.Source = StructureNodeSource.UserCreated;
+            if (mainVm.StructureTree.RootNode != null)
+                mainVm.StructureTree.RootNode.Source = StructureNodeSource.UserCreated;
             mainVm.StatusText = $"已从 {openDialog.FileName} 导入结构";
         }
         catch (Exception ex)
