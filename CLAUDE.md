@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Windows desktop tool for binary file structure analysis — automatically identifies and visualizes the internal layout of unknown binary files through signature matching and heuristic inference, with a hex view + structure tree as the core interaction model.
 
-**Current status**: V1.3. C# .NET 10 WPF, with dual-engine structure recognition, 35+ predefined format structure rules with sequential/repeating/schema support, structure tree save/restore, array loop + offsetFrom + lengthField, PE dynamic offset handling, 88 xUnit tests passing.
+**Current status**: V1.3. C# .NET 10 WPF, with dual-engine structure recognition, 35+ predefined format structure rules with sequential/repeating/schema support, structure tree save/restore, array loop + offsetFrom + lengthField, PE dynamic offset handling, 134 xUnit tests passing (0 warnings, 0 errors).
 
 ## Tech Stack
 
@@ -60,8 +60,8 @@ FileStruct.sln
 │       ├── Converters/           # BoolToVisibility, FileSize converters
 │       └── Styles/               # Generic.xaml (HexView default template)
 ├── tests/
-│   ├── FileStruct.Core.Tests/    # BinaryBuffer tests
-│   ├── FileStruct.Services.Tests/ # Service unit tests
+│   ├── FileStruct.Core.Tests/    # BinaryBuffer、StructureNode 单元/回归测试
+│   ├── FileStruct.Services.Tests/ # 服务层单元测试 + UI 控件回归测试
 │   ├── FileStruct.Integration.Tests/ # End-to-end project save/load
 │   └── FileStruct.Performance.Tests/ # Performance benchmarks (V1.0+)
 ├── samples/                      # Test binary files
@@ -101,7 +101,7 @@ User opens file → MainViewModel.OpenFileCommand
 
 From `.spec/开发规范.md`:
 
-1. **TDD-first**: Write unit/integration tests before core logic.
+1. **TDD-first**: Write unit tests and regression tests before core logic.
 2. **Plan with user**: For large/complex changes, plan first — interact with the user to clarify requirements and eliminate ambiguity before generating code.
 3. **Break down big tasks**: Split large/complex requirements into smaller tasks and complete incrementally.
 4. **Git before edit**: Commit before modifying files for rollback.
@@ -124,5 +124,5 @@ From `.spec/开发规范.md`:
 
 - Commit messages reference requirements sections (e.g., `§2.3` for structure recognition)
 - Follow the version roadmap strictly — don't implement V1.5+ features in V0.1 scope
-- Start each version milestone with test cases per Development Rule #1
+- Start each version milestone with unit tests and regression tests per Development Rule #1
 - When starting new code generation, ensure `dotnet build` passes with 0 errors first
