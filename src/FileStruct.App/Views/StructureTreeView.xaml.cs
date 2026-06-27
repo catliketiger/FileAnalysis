@@ -319,7 +319,10 @@ public partial class StructureTreeView : UserControl
             {
                 var rarVer = buffer.ReadByte(item.Node.Offset + 6);
                 if (rarVer == 1)
-                    ExpandRar5Archive(item, buffer, mainVm);
+                {
+                    var count = ExpandRar5Archive(item, buffer, mainVm);
+                    if (count == 0) ExpandRar4Archive(item, buffer, mainVm);
+                }
                 else
                     ExpandRar4Archive(item, buffer, mainVm);
             }
@@ -423,9 +426,12 @@ public partial class StructureTreeView : UserControl
             return (result, i);
         }
 
-        private void ExpandRar5Archive(TreeItemViewModel item, BinaryBuffer buffer, MainViewModel mainVm)
+        private int ExpandRar5Archive(TreeItemViewModel item, BinaryBuffer buffer, MainViewModel mainVm)
         {
-            long pos = 8; // 跳过 "Rar!\x1A\x07\x01\x00" 标记(8字节)
+            System.Diagnostics.Debug.WriteLine("[RAR5] 开始展开");
+            var startOffset = item.Node.Offset;
+            long pos = startOffset + 8; // 跳过 "Rar!\x1A\x07\x01\x00" 标记(8字节)
+            System.Diagnostics.Debug.WriteLine($"[RAR5] startOffset={startOffset}, pos={pos}, fileLen={buffer.Length}");
             int count = 0;
             var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
 
@@ -434,50 +440,46 @@ public partial class StructureTreeView : UserControl
                 // CRC32 (4 bytes, we just skip it)
                 // HeaderSize (vint) → header 总大小
                 var hdrBytes = ReadRar5Block(buffer, pos, out int hdrSize);
-                if (hdrBytes == null || hdrSize < 2) break;
+                if (hdrBytes == null || hdrSize < 2) { System.Diagnostics.Debug.WriteLine($"[RAR5] 块空或太小 pos={pos}"); break; }
+
+                System.Diagnostics.Debug.WriteLine($"[RAR5] 块 pos={pos}, hdrSize={hdrSize}, 前4字节={BitConverter.ToString(hdrBytes, 0, Math.Min(4, hdrBytes.Length))}");
 
                 int off = 4; // skip CRC32
                 var (hdrSizeVal, hdrSizeLen) = ReadRar5Vint(hdrBytes, off);
                 off += hdrSizeLen;
-                if (hdrSizeVal < 2UL || hdrSizeVal > (ulong)hdrBytes.Length) break;
+                if (hdrSizeVal < 2UL || hdrSizeVal > (ulong)hdrBytes.Length) { System.Diagnostics.Debug.WriteLine($"[RAR5] hdrSizeVal={hdrSizeVal} 异常"); break; }
 
                 var (hdrType, typeLen) = ReadRar5Vint(hdrBytes, off);
                 off += typeLen;
+                System.Diagnostics.Debug.WriteLine($"[RAR5] hdrType={hdrType}");
 
                 var (hdrFlags, flagsLen) = ReadRar5Vint(hdrBytes, off);
                 off += flagsLen;
                 var hdrFlagsInt = (int)hdrFlags;
 
-                // 跳过 ExtraAreaSize (if flags & 0x0001)
-                if ((hdrFlagsInt & 0x0001) != 0)
+                ulong dataAreaSize = 0;
+                if ((hdrFlagsInt & 0x0001) != 0) // ExtraAreaSize
                 {
                     var (extraSize, extraLen) = ReadRar5Vint(hdrBytes, off);
                     off += extraLen;
                     off += (int)extraSize;
                 }
-
-                // 跳过 DataAreaSize (if flags & 0x0002)
-                ulong dataAreaSize = 0;
-                if ((hdrFlagsInt & 0x0002) != 0)
+                if ((hdrFlagsInt & 0x0002) != 0) // DataAreaSize
                 {
                     var (daSize, daLen) = ReadRar5Vint(hdrBytes, off);
                     off += daLen;
                     dataAreaSize = daSize;
                 }
 
-                // 检查加密标志
-                bool isEnc = (hdrFlagsInt & 0x0040) != 0; // HEAD_FLAGS_ENCRYPTED
+                bool isEnc = (hdrFlagsInt & 0x0040) != 0;
                 var hdrTypeInt = (int)hdrType;
 
                 if (hdrTypeInt == 2) // 文件头
                 {
-                    // 文件特有字段
-                    // Compression info (vint)
                     var (compInfo, compLen) = ReadRar5Vint(hdrBytes, off);
                     off += compLen;
                     bool isDir = (compInfo & (1UL << 11)) != 0;
 
-                    // Unpacked size (vint or 8 bytes if large flag)
                     ulong unpackedSize = 0;
                     if ((compInfo & (1UL << 12)) != 0 && off + 8 <= hdrBytes.Length)
                     {
@@ -491,20 +493,20 @@ public partial class StructureTreeView : UserControl
                         unpackedSize = us;
                     }
 
-                    // File attributes (vint) - skip
+                    if ((compInfo & (1UL << 13)) != 0) // salt present, skip 8 bytes
+                    {
+                        if (off + 8 <= hdrBytes.Length) off += 8;
+                    }
+
                     var (attr, attrLen) = ReadRar5Vint(hdrBytes, off);
                     off += attrLen;
-
-                    // File modification time (vint) - skip
                     var (ftime, ftimeLen) = ReadRar5Vint(hdrBytes, off);
                     off += ftimeLen;
 
-                    // 文件名: 剩余header字节即为UTF-8文件名
                     string fileName;
                     if (off < hdrBytes.Length)
                     {
                         fileName = System.Text.Encoding.UTF8.GetString(hdrBytes, off, hdrBytes.Length - off);
-                        // 去掉尾部空字符
                         var nullIdx = fileName.IndexOf('\0');
                         if (nullIdx >= 0) fileName = fileName[..nullIdx];
                     }
@@ -512,29 +514,28 @@ public partial class StructureTreeView : UserControl
 
                     if (!isDir)
                     {
-                        // 数据体在 header 之后
                         long dataOff = pos + hdrSize;
                         long dataLen = (long)dataAreaSize;
-
                         var methodStr = $"v{compInfo & 0x3FF}";
                         var displayName = $"{fileName}  [{methodStr}]  {FormatSize((long)unpackedSize)}";
                         var desc = isEnc ? $"[加密] RAR5 {methodStr}: {unpackedSize} bytes" : $"RAR5 {methodStr}: {unpackedSize} bytes";
-
                         entries.Add((dataOff, dataLen > 0 ? dataLen : (long)unpackedSize,
                             displayName, desc, fileName, isEnc));
                         count++;
+                        System.Diagnostics.Debug.WriteLine($"[RAR5] 发现文件: {fileName}, size={unpackedSize}, off={dataOff}");
                     }
-                    // 目录就跳过
                 }
                 else if (hdrTypeInt == 5) // 结束块
-                    break;
+                { System.Diagnostics.Debug.WriteLine("[RAR5] 结束块"); break; }
 
-                // 移动到下一个块
                 pos += hdrSize + (long)dataAreaSize;
                 if (pos >= buffer.Length) break;
             }
+            System.Diagnostics.Debug.WriteLine($"[RAR5] 展开结束，共 {count} 个文件");
 
-            BuildArchiveTree(item.Node, entries, mainVm);
+            if (count > 0)
+                BuildArchiveTree(item.Node, entries, mainVm);
+            return count;
         }
 
         /// <summary>读取 RAR5 块的完整数据（CRC + header + data）</summary>
