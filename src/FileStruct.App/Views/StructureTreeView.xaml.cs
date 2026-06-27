@@ -343,13 +343,29 @@ public partial class StructureTreeView : UserControl
             int count = 0;
             bool hasEncrypted = false;
 
+            // 先检查是否有加密，再扫描条目
             while (count < totalEntries && count < 10000 && cdPos + 46 <= buffer.Length)
             {
                 var sig = buffer.ReadUInt32(cdPos, true);
                 if (sig != 0x02014B50) break;
 
                 var flags = buffer.ReadUInt16(cdPos + 8, true);
-                if ((flags & 1) != 0) hasEncrypted = true;
+                if ((flags & 1) != 0) { hasEncrypted = true; break; }
+                cdPos += 46;
+                count++;
+            }
+
+            // 重新扫描
+            cdPos = cdOffset;
+            count = 0;
+
+            while (count < totalEntries && count < 10000 && cdPos + 46 <= buffer.Length)
+            {
+                var sig = buffer.ReadUInt32(cdPos, true);
+                if (sig != 0x02014B50) break;
+
+                var flags = buffer.ReadUInt16(cdPos + 8, true);
+                var isEncrypted = (flags & 1) != 0;
 
                 var compMethod = buffer.ReadUInt16(cdPos + 10, true);
                 var compSize = buffer.ReadUInt32(cdPos + 20, true);
@@ -382,8 +398,9 @@ public partial class StructureTreeView : UserControl
                 }
 
                 var dataLen = compSize > 0 ? (long)compSize : (long)uncompSize;
-                var displayName = $"{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
-                var desc = $"{methodStr}: {compSize} → {uncompSize} bytes";
+                var encPrefix = isEncrypted ? "🔒 " : "";
+                var displayName = $"{encPrefix}{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
+                var desc = isEncrypted ? $"[加密] {methodStr}: {compSize} → {uncompSize} bytes" : $"{methodStr}: {compSize} → {uncompSize} bytes";
 
                 entries.Add((dataOffset, dataLen, displayName, desc, fileName));
                 cdPos += 46 + nameLen + extraLen + commentLen;
@@ -448,12 +465,15 @@ public partial class StructureTreeView : UserControl
                     if ((headerFlags & 0x0008) != 0) blockTotal += 2; // extra area size field itself
                     blockTotal += 38 + nameSize; // full header
 
+                    var isEnc = (headerFlags & 0x0004) != 0;
                     var methodStr = method <= 5 ? $"v{method}" : $"?{method}";
-                    var displayName = $"{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
+                    var encPrefix = isEnc ? "🔒 " : "";
+                    var displayName = $"{encPrefix}{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
                     var dataOffset = pos + blockTotal;
 
+                    var rarDesc = isEnc ? $"[加密] RAR4 {methodStr}: {compSize} → {uncompSize} bytes" : $"RAR4 {methodStr}: {compSize} → {uncompSize} bytes";
                     entries.Add((dataOffset, compSize > 0 ? compSize : uncompSize,
-                        displayName, $"RAR4 {methodStr}: {compSize} → {uncompSize} bytes", fileName));
+                        displayName, rarDesc, fileName));
                     count++;
 
                     pos = dataOffset + compSize;

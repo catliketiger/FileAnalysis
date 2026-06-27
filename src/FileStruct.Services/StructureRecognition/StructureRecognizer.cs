@@ -332,9 +332,25 @@ public class StructureRecognizer : IStructureRecognizer
             AddTrailerEntry(trailerNode, trailerPart, "/Root", "根对象引用");
             AddTrailerEntry(trailerNode, trailerPart, "/Info", "文档信息引用");
             AddTrailerEntry(trailerNode, trailerPart, "/Pages", "页面目录引用");
+            AddTrailerEntry(trailerNode, trailerPart, "/Encrypt", "加密字典引用");
 
             if (trailerNode.Children.Count > 0)
                 pdfNode.AddChild(trailerNode);
+
+            // PDF 加密提示
+            if (trailerPart.Contains("/Encrypt", StringComparison.Ordinal))
+            {
+                pdfNode.AddChild(new StructureNode
+                {
+                    Name = "🔒 文件已加密",
+                    Offset = xrefOffset + trailerIdx + trailerPart.IndexOf("/Encrypt", StringComparison.Ordinal),
+                    Length = 20,
+                    DataType = FieldDataType.ASCII,
+                    Confidence = 0.9,
+                    Source = StructureNodeSource.AutoDetected,
+                    Description = "该 PDF 文件受密码保护",
+                });
+            }
         }
         catch (Exception ex)
         {
