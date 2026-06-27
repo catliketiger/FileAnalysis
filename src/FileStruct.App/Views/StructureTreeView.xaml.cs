@@ -318,13 +318,22 @@ public partial class StructureTreeView : UserControl
             else if (sig32 == 0x21726152) // "Rar!"
             {
                 var rarVer = buffer.ReadByte(item.Node.Offset + 6);
+                System.Diagnostics.Debug.WriteLine($"[RAR] 版本字节={rarVer}, 文件大小={buffer.Length}");
                 if (rarVer == 1)
                 {
                     var count = ExpandRar5Archive(item, buffer, mainVm);
-                    if (count == 0) ExpandRar4Archive(item, buffer, mainVm);
+                    if (count > 0) { mainVm.StatusText = $"RAR5展开完成，共{count}个条目"; }
+                    else
+                    {
+                        mainVm.StatusText = "RAR5展开未识别到条目，尝试RAR4模式...";
+                        ExpandRar4Archive(item, buffer, mainVm);
+                    }
                 }
                 else
+                {
+                    mainVm.StatusText = "正在解析RAR4格式...";
                     ExpandRar4Archive(item, buffer, mainVm);
+                }
             }
         }
         catch (Exception ex)
@@ -535,6 +544,8 @@ public partial class StructureTreeView : UserControl
 
             if (count > 0)
                 BuildArchiveTree(item.Node, entries, mainVm);
+            else
+                mainVm.StatusText = "RAR5展开未识别到文件条目";
             return count;
         }
 
@@ -559,37 +570,44 @@ public partial class StructureTreeView : UserControl
             int count = 0;
             var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
 
+            // RAR4 每个块头都有 HEAD_SIZE 字段在偏移 5-6
             while (pos + 7 <= buffer.Length && count < 10000)
             {
                 var headerType = buffer.ReadByte(pos + 2);
                 var headerFlags = buffer.ReadUInt16(pos + 3, true);
-                var hasHighSize = (headerFlags & 0x0100) != 0;
+                var headSize = buffer.ReadUInt16(pos + 5, true); // HEAD_SIZE 总头大小
                 var isEnc = (headerFlags & 0x0004) != 0;
-                var hasSalt = (headerFlags & 0x0400) != 0;
+                var hasLarge = (headerFlags & 0x0100) != 0; // LARGE_FILE
 
-                if (headerType == 0x74) // 文件头
+                if (headerType == 0x74) // 文件头 (HEAD_FILE)
                 {
-                    // 根据 HIGH_SIZE flag 计算偏移
-                    int hiOff = hasHighSize ? 8 : 0; // 4+4 bytes for PackHigh+UnpackHigh
+                    // +0: CRC(2) +2:Type(1) +3:Flags(2) +5:HEAD_SIZE(2) = 7字节基头
+                    // +7: HIGH_PACK_SIZE(4) +11: HIGH_UNP_SIZE(4) [if LARGE_FILE]
+                    // +7 或 +15: PACK_SIZE(4) / UNP_SIZE(4)
+                    int sOff = 7;
+                    if (hasLarge) sOff += 8;
 
-                    var compSize = (long)buffer.ReadUInt32(pos + 5 + (hasHighSize ? 8 : 0), true);
-                    if (hasHighSize)
-                        compSize |= (long)buffer.ReadUInt32(pos + 5, true) << 32;
-                    var uncompSize = (long)buffer.ReadUInt32(pos + 9 + (hasHighSize ? 8 : 0), true);
-                    if (hasHighSize)
-                        uncompSize |= (long)buffer.ReadUInt32(pos + 9, true) << 32;
+                    var compSize = (long)buffer.ReadUInt32(pos + sOff, true);
+                    var uncompSize = (long)buffer.ReadUInt32(pos + sOff + 4, true);
+                    if (hasLarge)
+                    {
+                        compSize |= (long)buffer.ReadUInt32(pos + 7, true) << 32;
+                        uncompSize |= (long)buffer.ReadUInt32(pos + 11, true) << 32;
+                        sOff = 15; // 固定字段起始偏移(有LARGE)
+                    }
+                    else sOff = 7; // 固定字段起始偏移(无LARGE)
+                    // 后续字段: OS(1) CRC(4) TIME(4) VER(1) METHOD(1) NAMESIZE(2) ATTR(4) = 17字节
 
-                    int fOff = 13 + hiOff; // 固定字段起始偏移
-                    var os = buffer.ReadByte(pos + fOff);
-                    var fileCRC = buffer.ReadUInt32(pos + fOff + 1, true);
-                    var fileTime = buffer.ReadUInt32(pos + fOff + 5, true);
-                    var ver = buffer.ReadByte(pos + fOff + 9);
-                    var method = buffer.ReadByte(pos + fOff + 10);
-                    int nameSize = buffer.ReadUInt16(pos + fOff + 11, true);
-                    var fileAttr = buffer.ReadUInt32(pos + fOff + 13, true);
-                    int nameOff = fOff + 17; // 文件名偏移
+                    var os = buffer.ReadByte(pos + sOff + 8);
+                    var fileCRC = buffer.ReadUInt32(pos + sOff + 9, true);
+                    var fileTime = buffer.ReadUInt32(pos + sOff + 13, true);
+                    var ver = buffer.ReadByte(pos + sOff + 17);
+                    var method = buffer.ReadByte(pos + sOff + 18);
+                    int nameSize = buffer.ReadUInt16(pos + sOff + 19, true);
+                    // attr at sOff + 21 (4 bytes)
 
                     string fileName;
+                    int nameOff = sOff + 21 + 4; // attr(4)后才是文件名
                     if (nameSize > 0 && pos + nameOff + nameSize <= buffer.Length)
                     {
                         var nameBytes = buffer.ReadBytes(pos + nameOff, nameSize);
@@ -597,18 +615,9 @@ public partial class StructureTreeView : UserControl
                     }
                     else fileName = $"(file_{count})";
 
-                    // 计算头部总大小
-                    int hdrTotal = nameOff + nameSize;
-                    if (hasSalt) hdrTotal += 8;
-                    if ((headerFlags & 0x0008) != 0) // extra area
-                    {
-                        var extraSize = buffer.ReadUInt16(pos + hdrTotal, true);
-                        hdrTotal += 2 + extraSize;
-                    }
-
                     var methodStr = method <= 5 ? $"v{method}" : $"?{method}";
                     var displayName = $"{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
-                    var dataOff = pos + hdrTotal;
+                    var dataOff = pos + headSize;
                     var rarDesc = isEnc ? $"[加密] RAR4 {methodStr}: {compSize} → {uncompSize} bytes" : $"RAR4 {methodStr}: {compSize} → {uncompSize} bytes";
                     entries.Add((dataOff, compSize > 0 ? compSize : Math.Max(1, uncompSize),
                         displayName, rarDesc, fileName, isEnc));
@@ -617,14 +626,11 @@ public partial class StructureTreeView : UserControl
                     pos = dataOff + (compSize > 0 ? compSize : 0);
                 }
                 else if (headerType == 0x73) // 归档头
-                {
-                    var hasExtra = (headerFlags & 0x0008) != 0;
-                    pos += 7 + (hasExtra ? 2 + buffer.ReadUInt16(pos + 5, true) : 0);
-                }
+                    pos += headSize;
                 else if (headerType == 0x7B) // 结束块
                     break;
                 else
-                    pos += 7 + (((headerFlags & 0x0008) != 0) ? 2 + buffer.ReadUInt16(pos + 5, true) : 0);
+                    pos += headSize;
 
                 if (pos >= buffer.Length || pos < 0) break;
             }
