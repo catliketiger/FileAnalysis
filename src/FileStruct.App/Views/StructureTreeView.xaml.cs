@@ -543,6 +543,45 @@ public partial class StructureTreeView : UserControl
             System.Diagnostics.Debug.WriteLine($"[RAR5] 展开结束，共 {count} 个文件");
 
             if (count > 0)
+            {
+                BuildArchiveTree(item.Node, entries, mainVm);
+                return count;
+            }
+
+            // 后备方案：扫描文件名模式
+            System.Diagnostics.Debug.WriteLine("[RAR5] 尝试文件名扫描模式");
+            mainVm.StatusText = "正在扫描RAR5文件名...";
+
+            long scanStart = startOffset + 8;
+            long scanEnd = Math.Min(startOffset + buffer.Length, scanStart + 1024);
+            var textBuf = new byte[scanEnd - scanStart];
+            for (int i = 0; i < textBuf.Length; i++)
+                textBuf[i] = buffer.ReadByte(scanStart + i);
+
+            // 在数据中搜索可打印文件名(包含.或/的字符串)
+            for (int i = 0; i < textBuf.Length; i++)
+            {
+                if (textBuf[i] >= 0x20 && textBuf[i] < 0x7F)
+                {
+                    int j = i;
+                    while (j < textBuf.Length && textBuf[j] >= 0x20 && textBuf[j] < 0x7F) j++;
+                    if (j - i >= 3 && j - i <= 200)
+                    {
+                        var name = System.Text.Encoding.ASCII.GetString(textBuf, i, j - i);
+                        if ((name.Contains('.') || name.Contains('/') || name.Contains('\\')) &&
+                            !entries.Any(e => e.path == name))
+                        {
+                            var displayName = $"{name}  [v?]  {FormatSize(0)}";
+                            entries.Add((0, 0, displayName, "RAR5 条目", name, false));
+                            count++;
+                            if (count >= 100) break;
+                        }
+                    }
+                    i = j;
+                }
+            }
+
+            if (count > 0)
                 BuildArchiveTree(item.Node, entries, mainVm);
             else
                 mainVm.StatusText = "RAR5展开未识别到文件条目";
