@@ -59,11 +59,13 @@ public partial class StructureTreeView : UserControl
             {
                 var node = item.Node;
                 mainVm.StructureTree.SelectedNode = node;
-                // 先设偏移(不触发导航)，再设长度(触发导航，此时两个值都已就位)
                 mainVm.HexEditor.NavigateToOffset = node.Offset;
                 mainVm.HexEditor.NavigateToLength = (int)Math.Max(1, node.Length);
                 mainVm.HexEditor.SelectionInfo = $"字段: {node.Name} @ 0x{node.Offset:X}, 长度 {node.Length}";
                 mainVm.StatusText = $"已定位到字段: {node.Name}";
+                // 强制 WPF 立即处理所有待处理的 DataBinding 更新，确保两个 DP 都已设置
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
+                    () => { }, System.Windows.Threading.DispatcherPriority.Background);
             }
             finally
             {
