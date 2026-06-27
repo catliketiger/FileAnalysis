@@ -112,45 +112,6 @@ public class HexRowListTests : IDisposable
     }
 
     [Fact]
-    public void ByteCell_GroupSize2_MarksCorrectGroupStart()
-    {
-        var data = new byte[16];
-        File.WriteAllBytes(_testFilePath, data);
-        using var buf = BinaryBuffer.LoadFromFile(_testFilePath);
-
-        var list = new HexRowList(buf, 16, 2);
-        var row = (HexRowData?)list[0];
-        Assert.NotNull(row);
-
-        // GroupSize=2: 每2个字节的第一个是组起始
-        Assert.True(row!.Bytes[0].IsGroupStart);  // byte 0
-        Assert.False(row.Bytes[1].IsGroupStart);
-        Assert.True(row.Bytes[2].IsGroupStart);   // byte 2
-        Assert.False(row.Bytes[3].IsGroupStart);
-        Assert.True(row.Bytes[14].IsGroupStart);  // byte 14
-        Assert.False(row.Bytes[15].IsGroupStart);
-    }
-
-    [Fact]
-    public void ByteCell_GroupSize4_MarksCorrectGroupStart()
-    {
-        var data = new byte[16];
-        File.WriteAllBytes(_testFilePath, data);
-        using var buf = BinaryBuffer.LoadFromFile(_testFilePath);
-
-        var list = new HexRowList(buf, 16, 4);
-        var row = (HexRowData?)list[0];
-        Assert.NotNull(row);
-
-        // GroupSize=4: 每4个字节的第一个是组起始
-        Assert.True(row!.Bytes[0].IsGroupStart);
-        Assert.False(row.Bytes[1].IsGroupStart);
-        Assert.False(row.Bytes[3].IsGroupStart);
-        Assert.True(row.Bytes[4].IsGroupStart);
-        Assert.True(row.Bytes[12].IsGroupStart);
-    }
-
-    [Fact]
     public void HexString_GroupSize2_Formatting()
     {
         // 16 bytes: 00 01 02 ... 0F
@@ -206,5 +167,21 @@ public class HexRowListTests : IDisposable
         Assert.Equal(2, parts.Length);
         Assert.Equal("0001020304050607", parts[0]);
         Assert.Equal("08090A0B0C0D0E0F", parts[^1]);
+    }
+
+    [Fact]
+    public void ByteCell_NoGroupStartProperty()
+    {
+        // 验证分组标记已完全移除
+        var data = new byte[16];
+        File.WriteAllBytes(_testFilePath, data);
+        using var buf = BinaryBuffer.LoadFromFile(_testFilePath);
+
+        var list = new HexRowList(buf, 16, 2);
+        var row = (HexRowData?)list[0];
+        Assert.NotNull(row);
+
+        // 确认 IsGroupStart 已不存在
+        Assert.False(typeof(ByteCell).GetProperty("IsGroupStart") != null);
     }
 }

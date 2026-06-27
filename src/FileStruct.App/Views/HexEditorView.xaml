@@ -14,17 +14,7 @@
 
         <!-- 工具栏 -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="4">
-            <Label Content="分组:" VerticalAlignment="Center"/>
-            <ComboBox Width="60" VerticalAlignment="Center" Margin="4,0"
-                      SelectedIndex="1"
-                      SelectionChanged="GroupSizeCombo_SelectionChanged">
-                <ComboBoxItem Tag="1">1</ComboBoxItem>
-                <ComboBoxItem Tag="2" IsSelected="True">2</ComboBoxItem>
-                <ComboBoxItem Tag="4">4</ComboBoxItem>
-                <ComboBoxItem Tag="8">8</ComboBoxItem>
-            </ComboBox>
-            <Separator Width="1" Background="{DynamicResource SeparatorBrush}" Margin="8,4"/>
-            <CheckBox Content="小端" VerticalAlignment="Center"
+            <CheckBox Content="小端" VerticalAlignment="Center" Margin="4,0"
                       IsChecked="{Binding HexEditor.IsLittleEndian, Mode=TwoWay}"/>
         </StackPanel>
 
@@ -32,7 +22,6 @@
         <controls:HexView Grid.Row="1"
                           x:Name="HexViewControl"
                           Buffer="{Binding HexEditor.Buffer}"
-                          ByteGroupSize="{Binding HexEditor.ByteGroupSize}"
                           ScrollOffset="{Binding HexEditor.ScrollOffset}"
                           NavigateToOffset="{Binding HexEditor.NavigateToOffset}"
                           NavigateToLength="{Binding HexEditor.NavigateToLength}"/>

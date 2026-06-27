@@ -57,19 +57,4 @@ public partial class HexEditorView : UserControl
         mainVm.HexEditor.SelectionLength = args.Length;
         mainVm.HexEditor.SelectionInfo = $"选中: 偏移 0x{args.StartOffset:X}, 长度 {args.Length} 字节";
     }
-
-    private void GroupSizeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (sender is ComboBox combo && combo.SelectedItem is ComboBoxItem item &&
-            int.TryParse(item.Tag?.ToString(), out var groupSize))
-        {
-            // 直接设 HexView DP（绕过绑定异步问题）
-            // 注意：初始化时 HexViewControl 可能尚未加载，需判空
-            if (HexViewControl != null)
-                HexViewControl.ByteGroupSize = groupSize;
-            // 也同步 ViewModel 属性
-            if (DataContext is MainViewModel mainVm)
-                mainVm.HexEditor.ByteGroupSize = groupSize;
-        }
-    }
 }

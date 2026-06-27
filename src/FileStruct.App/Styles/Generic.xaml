@@ -4,19 +4,10 @@
 
     <!-- 单字节数据模板 -->
     <DataTemplate x:Key="ByteCellTemplate">
-        <Border x:Name="ByteBorder" Width="24" Height="18" Margin="1,0,1,0">
+        <Border Width="24" Height="18" Margin="1,0">
             <TextBlock Text="{Binding Hex}"
                        FontFamily="Cascadia Code" FontSize="13"
                        HorizontalAlignment="Center"/>
-            <Border.Style>
-                <Style TargetType="Border">
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsGroupStart}" Value="True">
-                            <Setter Property="Margin" Value="4,0,1,0"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Border.Style>
         </Border>
     </DataTemplate>
 

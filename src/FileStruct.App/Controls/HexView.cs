@@ -527,16 +527,11 @@ public class HexRowList : IList
         var byteCells = new ByteCell[_bytesPerRow];
         for (int i = 0; i < data.Length; i++)
         {
-            byteCells[i] = new ByteCell
-            {
-                Hex = data[i].ToString("X2"),
-                Offset = offset + i,
-                IsGroupStart = i % _byteGroupSize == 0,
-            };
+            byteCells[i] = new ByteCell { Hex = data[i].ToString("X2"), Offset = offset + i };
         }
         for (int i = data.Length; i < _bytesPerRow; i++)
         {
-            byteCells[i] = new ByteCell { Hex = "  ", Offset = -1, IsGroupStart = i % _byteGroupSize == 0 };
+            byteCells[i] = new ByteCell { Hex = "  ", Offset = -1 };
         }
 
         // ASCII 列（始终补全到16字符，不足的补空格）
@@ -595,6 +590,4 @@ public class ByteCell
 {
     public string Hex { get; init; } = "";
     public long Offset { get; init; }
-    /// <summary>该字节是否为一组的起始（用于分组间距显示）</summary>
-    public bool IsGroupStart { get; init; }
 }
