@@ -341,11 +341,15 @@ public partial class StructureTreeView : UserControl
             var entries = new List<(long dataOffset, long length, string displayName, string description, string path)>();
             long cdPos = cdOffset;
             int count = 0;
+            bool hasEncrypted = false;
 
             while (count < totalEntries && count < 10000 && cdPos + 46 <= buffer.Length)
             {
                 var sig = buffer.ReadUInt32(cdPos, true);
                 if (sig != 0x02014B50) break;
+
+                var flags = buffer.ReadUInt16(cdPos + 8, true);
+                if ((flags & 1) != 0) hasEncrypted = true;
 
                 var compMethod = buffer.ReadUInt16(cdPos + 10, true);
                 var compSize = buffer.ReadUInt32(cdPos + 20, true);
@@ -378,12 +382,20 @@ public partial class StructureTreeView : UserControl
                 }
 
                 var dataLen = compSize > 0 ? (long)compSize : (long)uncompSize;
-                var displayName = $"📄 {fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
+                var displayName = $"{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
                 var desc = $"{methodStr}: {compSize} → {uncompSize} bytes";
 
                 entries.Add((dataOffset, dataLen, displayName, desc, fileName));
                 cdPos += 46 + nameLen + extraLen + commentLen;
                 count++;
+            }
+
+            if (hasEncrypted)
+            {
+                var pwd = Microsoft.VisualBasic.Interaction.InputBox(
+                    "该压缩包包含加密文件，请输入密码：", "压缩包密码", "");
+                if (!string.IsNullOrEmpty(pwd))
+                    mainVm.StatusText = $"已输入密码，共展示条目（暂不支持导出加密文件）";
             }
 
             BuildArchiveTree(item.Node, entries, mainVm);
@@ -437,7 +449,7 @@ public partial class StructureTreeView : UserControl
                     blockTotal += 38 + nameSize; // full header
 
                     var methodStr = method <= 5 ? $"v{method}" : $"?{method}";
-                    var displayName = $"📄 {fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
+                    var displayName = $"{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
                     var dataOffset = pos + blockTotal;
 
                     entries.Add((dataOffset, compSize > 0 ? compSize : uncompSize,
@@ -491,7 +503,7 @@ public partial class StructureTreeView : UserControl
                     {
                         var dirNode = new StructureNode
                         {
-                            Name = "📁 " + parts[i] + "/",
+                            Name = parts[i] + "/",
                             Offset = 0, Length = 0,
                             DataType = FieldDataType.Struct,
                             Confidence = 1.0,

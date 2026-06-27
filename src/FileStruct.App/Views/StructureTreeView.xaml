@@ -36,7 +36,7 @@
                 <HierarchicalDataTemplate DataType="{x:Type local:TreeItemViewModel}"
                                           ItemsSource="{Binding Children}">
                     <StackPanel Orientation="Horizontal" ToolTip="{Binding Path=Node.Description}">
-                        <TextBlock Text="{Binding Name}" FontWeight="Bold" Margin="0,0,4,0"/>
+                        <TextBlock Text="{Binding Name}" FontWeight="Bold" Margin="0,0,4,0" Foreground="{Binding Foreground}"/>
                         <TextBlock Text="{Binding Offset, StringFormat={}0x{0:X}}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,4,0"/>
                         <TextBlock Text="{Binding Length, StringFormat={}[{0}]}" Foreground="{DynamicResource TextMutedBrush}"/>
                         <TextBlock Text="{Binding DataType}" Foreground="{DynamicResource AccentBrush}" Margin="4,0,0,0"/>
