@@ -107,7 +107,7 @@ public class HexRowListTests : IDisposable
         var row = (HexRowData?)list[1]; // second row, only 4 bytes
         Assert.NotNull(row);
         Assert.Equal(4, row!.RowByteCount);
-        Assert.Equal(4, row.Bytes.Length);
+        Assert.Equal(16, row.Bytes.Length); // padded to 16
         Assert.False(row.IsCompleteRow);
     }
 }

@@ -51,7 +51,7 @@ public class HexView : Control
 
     public static readonly DependencyProperty NavigateToLengthProperty =
         DependencyProperty.Register(nameof(NavigateToLength), typeof(int),
-            typeof(HexView), new PropertyMetadata(1));
+            typeof(HexView), new PropertyMetadata(1, OnNavigateToLengthChanged));
 
     public BinaryBuffer? Buffer
     {
@@ -109,6 +109,9 @@ public class HexView : Control
 
     /// <summary>行数据源（供虚拟化 ItemsControl 使用）</summary>
     public HexRowList? RowList { get; private set; }
+
+    /// <summary>待处理的导航长度（解决WPF绑定异步导致旧值问题）</summary>
+    private int _pendingNavigateLength = 1;
 
     #endregion
 
@@ -382,10 +385,16 @@ public class HexView : Control
             view.RebuildRows();
     }
 
+    private static void OnNavigateToLengthChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is HexView view && e.NewValue is int len)
+            view._pendingNavigateLength = Math.Max(1, len);
+    }
+
     private static void OnNavigateToOffsetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is HexView view && e.NewValue is long offset && offset >= 0)
-            view.NavigateTo(offset, view.NavigateToLength);
+            view.NavigateTo(offset, view._pendingNavigateLength);
     }
 
     /// <summary>
