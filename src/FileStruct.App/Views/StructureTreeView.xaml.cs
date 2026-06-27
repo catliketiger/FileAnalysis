@@ -59,7 +59,7 @@ public partial class StructureTreeView : UserControl
             {
                 var node = item.Node;
                 mainVm.StructureTree.SelectedNode = node;
-                // 使用 NavigateToOffset 实现居中 + 高亮
+                // 先设偏移(不触发导航)，再设长度(触发导航，此时两个值都已就位)
                 mainVm.HexEditor.NavigateToOffset = node.Offset;
                 mainVm.HexEditor.NavigateToLength = (int)Math.Max(1, node.Length);
                 mainVm.HexEditor.SelectionInfo = $"字段: {node.Name} @ 0x{node.Offset:X}, 长度 {node.Length}";

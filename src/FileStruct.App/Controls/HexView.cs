@@ -110,8 +110,8 @@ public class HexView : Control
     /// <summary>行数据源（供虚拟化 ItemsControl 使用）</summary>
     public HexRowList? RowList { get; private set; }
 
-    /// <summary>待处理的导航长度（解决WPF绑定异步导致旧值问题）</summary>
-    private int _pendingNavigateLength = 1;
+    /// <summary>待处理的导航偏移（解决WPF绑定异步导致旧值问题）</summary>
+    private long _pendingNavigateOffset = -1;
 
     #endregion
 
@@ -387,14 +387,19 @@ public class HexView : Control
 
     private static void OnNavigateToLengthChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is HexView view && e.NewValue is int len)
-            view._pendingNavigateLength = Math.Max(1, len);
+        if (d is HexView view && e.NewValue is int len && len >= 0)
+        {
+            var offset = view._pendingNavigateOffset;
+            if (offset >= 0)
+                view.NavigateTo(offset, Math.Max(1, len));
+        }
     }
 
     private static void OnNavigateToOffsetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is HexView view && e.NewValue is long offset && offset >= 0)
-            view.NavigateTo(offset, view._pendingNavigateLength);
+        // 只存储偏移，不触发导航（由 NavigateToLength 触发，确保长度已更新）
+        if (d is HexView view && e.NewValue is long offset)
+            view._pendingNavigateOffset = offset;
     }
 
     /// <summary>
