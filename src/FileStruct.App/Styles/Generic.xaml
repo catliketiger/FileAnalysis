@@ -27,22 +27,23 @@
                            Foreground="{DynamicResource TextSecondaryBrush}" Margin="4,0"/>
 
                 <!-- 十六进制列 - 逐字节显示 -->
-                <ItemsControl Grid.Column="1"
-                              ItemsSource="{Binding Bytes}"
-                              ItemTemplate="{StaticResource ByteCellTemplate}"
-                              Margin="4,0,0,0"
-                              HorizontalContentAlignment="Left">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" IsItemsHost="True"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
+                <Border Grid.Column="1" Margin="4,0,0,0" Padding="0">
+                    <ItemsControl ItemsSource="{Binding Bytes}"
+                                  ItemTemplate="{StaticResource ByteCellTemplate}"
+                                  HorizontalAlignment="Left">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" IsItemsHost="True"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </Border>
 
                 <!-- ASCII 列 -->
-                <TextBlock Grid.Column="2"
-                           Text="{Binding AsciiString}"
-                           Foreground="{DynamicResource TextMutedBrush}" Margin="6,0,0,0"/>
+                <Border Grid.Column="2" Margin="6,0,0,0" Padding="0" HorizontalAlignment="Stretch">
+                    <TextBlock Text="{Binding AsciiString}"
+                               Foreground="{DynamicResource TextMutedBrush}"/>
+                </Border>
             </Grid>
         </Border>
     </DataTemplate>
