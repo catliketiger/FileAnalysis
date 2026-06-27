@@ -499,7 +499,7 @@ public class HexRowList : IList
         var hexStr = string.Join(" ", hexParts);
 
         // 逐个字节数据（用于字节级高亮和精确点击）
-        var byteCells = new ByteCell[data.Length];
+        var byteCells = new ByteCell[_bytesPerRow];
         for (int i = 0; i < data.Length; i++)
         {
             byteCells[i] = new ByteCell
@@ -508,11 +508,17 @@ public class HexRowList : IList
                 Offset = offset + i,
             };
         }
+        for (int i = data.Length; i < _bytesPerRow; i++)
+        {
+            byteCells[i] = new ByteCell { Hex = "  ", Offset = -1 };
+        }
 
-        // ASCII 列
-        var asciiChars = new char[data.Length];
+        // ASCII 列（始终补全到16字符，不足的补空格）
+        var asciiChars = new char[_bytesPerRow];
         for (int i = 0; i < data.Length; i++)
             asciiChars[i] = data[i] >= 0x20 && data[i] <= 0x7E ? (char)data[i] : '.';
+        for (int i = data.Length; i < _bytesPerRow; i++)
+            asciiChars[i] = ' ';
 
         return new HexRowData
         {
