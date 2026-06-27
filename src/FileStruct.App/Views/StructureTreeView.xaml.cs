@@ -338,26 +338,10 @@ public partial class StructureTreeView : UserControl
         if (totalEntries == 0) { mainVm.StatusText = "压缩包为空"; return; }
 
             // 3. 解析中央目录条目 → 收集 (localHeaderOffset, compSize, uncompSize, method, filename)
-            var entries = new List<(long dataOffset, long length, string displayName, string description, string path)>();
+            var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
             long cdPos = cdOffset;
             int count = 0;
             bool hasEncrypted = false;
-
-            // 先检查是否有加密，再扫描条目
-            while (count < totalEntries && count < 10000 && cdPos + 46 <= buffer.Length)
-            {
-                var sig = buffer.ReadUInt32(cdPos, true);
-                if (sig != 0x02014B50) break;
-
-                var flags = buffer.ReadUInt16(cdPos + 8, true);
-                if ((flags & 1) != 0) { hasEncrypted = true; break; }
-                cdPos += 46;
-                count++;
-            }
-
-            // 重新扫描
-            cdPos = cdOffset;
-            count = 0;
 
             while (count < totalEntries && count < 10000 && cdPos + 46 <= buffer.Length)
             {
@@ -398,11 +382,10 @@ public partial class StructureTreeView : UserControl
                 }
 
                 var dataLen = compSize > 0 ? (long)compSize : (long)uncompSize;
-                var encPrefix = isEncrypted ? "🔒 " : "";
-                var displayName = $"{encPrefix}{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
+                var displayName = $"{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
                 var desc = isEncrypted ? $"[加密] {methodStr}: {compSize} → {uncompSize} bytes" : $"{methodStr}: {compSize} → {uncompSize} bytes";
 
-                entries.Add((dataOffset, dataLen, displayName, desc, fileName));
+                entries.Add((dataOffset, dataLen, displayName, desc, fileName, isEncrypted));
                 cdPos += 46 + nameLen + extraLen + commentLen;
                 count++;
             }
@@ -423,7 +406,7 @@ public partial class StructureTreeView : UserControl
             // RAR4 压缩包展开：依次扫描文件头块 (HeaderType=0x74)
             long pos = 7; // 跳过 Rar!\x1A\x07\x00 标记
             int count = 0;
-            var entries = new List<(long dataOffset, long length, string displayName, string description, string path)>();
+            var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
 
             while (pos + 11 <= buffer.Length && count < 10000)
             {
@@ -467,13 +450,12 @@ public partial class StructureTreeView : UserControl
 
                     var isEnc = (headerFlags & 0x0004) != 0;
                     var methodStr = method <= 5 ? $"v{method}" : $"?{method}";
-                    var encPrefix = isEnc ? "🔒 " : "";
-                    var displayName = $"{encPrefix}{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
+                    var displayName = $"{fileName}  [{methodStr}]  {FormatSize(uncompSize)}";
                     var dataOffset = pos + blockTotal;
 
                     var rarDesc = isEnc ? $"[加密] RAR4 {methodStr}: {compSize} → {uncompSize} bytes" : $"RAR4 {methodStr}: {compSize} → {uncompSize} bytes";
                     entries.Add((dataOffset, compSize > 0 ? compSize : uncompSize,
-                        displayName, rarDesc, fileName));
+                        displayName, rarDesc, fileName, isEnc));
                     count++;
 
                     pos = dataOffset + compSize;
@@ -503,14 +485,14 @@ public partial class StructureTreeView : UserControl
         }
 
         private static void BuildArchiveTree(StructureNode parent,
-            List<(long dataOffset, long length, string displayName, string description, string filePath)> entries,
+            List<(long dataOffset, long length, string displayName, string description, string filePath, bool isEncrypted)> entries,
             MainViewModel mainVm)
         {
             if (entries.Count == 0) { mainVm.StatusText = "未找到有效条目"; return; }
 
             var dirNodes = new Dictionary<string, StructureNode> { ["."] = parent };
 
-            foreach (var (dataOff, dataLen, dispName, desc, filePath) in entries)
+            foreach (var (dataOff, dataLen, dispName, desc, filePath, isEnc) in entries)
             {
                 var parts = filePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length == 0) continue;
@@ -540,6 +522,7 @@ public partial class StructureTreeView : UserControl
                     Name = dispName, Offset = dataOff, Length = dataLen,
                     DataType = FieldDataType.Bytes, Confidence = 1.0,
                     Source = StructureNodeSource.UserCreated, Description = desc,
+                    IsEncrypted = isEnc,
                 });
             }
 

@@ -488,6 +488,7 @@ public class TreeItemViewModel : ObservableObject
     public double Confidence => _node.Confidence;
     public bool IsConfidenceAvailable => _node.IsConfidenceAvailable;
     public StructureNodeSource Source => _node.Source;
+    public bool IsEncrypted => _node.IsEncrypted;
     public System.Windows.Media.Brush? Foreground => Source == StructureNodeSource.UserCreated
         ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x42, 0xA5, 0xF5))
         : null;

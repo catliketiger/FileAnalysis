@@ -37,6 +37,17 @@
                 <HierarchicalDataTemplate DataType="{x:Type local:TreeItemViewModel}"
                                           ItemsSource="{Binding Children}">
                     <StackPanel Orientation="Horizontal" ToolTip="{Binding Path=Node.Description}">
+                        <TextBlock Text="🔒 " Visibility="Collapsed" Margin="0,0,-2,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsEncrypted}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <TextBlock Text="{Binding Name}" FontWeight="Bold" Margin="0,0,4,0">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">

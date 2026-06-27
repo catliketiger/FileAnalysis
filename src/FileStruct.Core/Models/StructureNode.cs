@@ -98,6 +98,9 @@ public class StructureNode : INotifyPropertyChanged
         set => SetProperty(ref _isHighlighted, value);
     }
 
+    /// <summary>该字段/条目是否加密（用于压缩包和文档加密提示）</summary>
+    public bool IsEncrypted { get; set; }
+
     public string HighlightColor
     {
         get => _highlightColor;
@@ -177,6 +180,7 @@ public class StructureNode : INotifyPropertyChanged
             Description = Description,
             Source = Source,
             HighlightColor = HighlightColor,
+            IsEncrypted = IsEncrypted,
             OriginalSnapshot = OriginalSnapshot,
         };
         foreach (var child in Children)
@@ -198,6 +202,7 @@ public class StructureNode : INotifyPropertyChanged
         Description = snapshot.Description;
         Source = snapshot.Source;
         HighlightColor = snapshot.HighlightColor;
+        IsEncrypted = snapshot.IsEncrypted;
 
         Children.Clear();
         foreach (var child in snapshot.Children)
