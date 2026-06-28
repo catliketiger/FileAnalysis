@@ -861,7 +861,7 @@ public class StructureRecognizerTests : IDisposable
 
         var header = szNode.Children.FirstOrDefault(c => c.Name == "7z Start Header");
         Assert.NotNull(header);
-        Assert.Contains(header.Children, c => c.Name == "Version");
+        Assert.Contains(header.Children, c => c.Name == "MajorVersion");
         Assert.Contains(header.Children, c => c.Name == "NextHeaderOffset");
     }
 
@@ -880,6 +880,121 @@ public class StructureRecognizerTests : IDisposable
 
         File.WriteAllBytes(path, data);
         return path;
+    }
+
+    /// <summary>创建带简单 NextHeader 的 7z 文件</summary>
+    private string Create7zWithPlainHeader(string[] fileNames, out long nextHeaderOffset)
+    {
+        var path = Path.Combine(_testDir, $"{Guid.NewGuid():N}.7z");
+        using var ms = new MemoryStream();
+        using var w = new BinaryWriter(ms);
+
+        // ── SignatureHeader (32 bytes) ──
+        w.Write(new byte[] { 0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C }); // magic
+        w.Write((byte)0); w.Write((byte)23);  // version 0.23
+        w.Write(0u); // StartHeaderCRC placeholder
+
+        // Placeholder for NextHeaderOffset/Size/CRC
+        long nextOffFieldPos = ms.Position; // = 12
+        w.Write(0L); // NextHeaderOffset (REAL_UINT64)
+        w.Write(0L); // NextHeaderSize (REAL_UINT64)
+        w.Write(0u); // NextHeaderCRC
+
+        long nhStart = ms.Position;
+
+        // ── NextHeader: kHeader → FilesInfo → kName ──
+        w.Write((byte)0x01); // kHeader
+        w.Write((byte)0x05); // kFilesInfo
+        Write7zVint(w, (ulong)fileNames.Length); // NumFiles
+
+        // kName property
+        w.Write((byte)0x11); // kName
+        byte[] nameBlock;
+        using (var nms = new MemoryStream())
+        using (var nw = new BinaryWriter(nms))
+        {
+            nw.Write((byte)0x00); // External = 0
+            foreach (var fn in fileNames)
+                nw.Write(System.Text.Encoding.Unicode.GetBytes(fn + "\0"));
+            nameBlock = nms.ToArray();
+        }
+        Write7zVint(w, (ulong)nameBlock.Length);
+        w.Write(nameBlock);
+
+        w.Write((byte)0x00); // kEnd of FilesInfo
+        w.Write((byte)0x00); // kEnd of Header
+
+        long nhEnd = ms.Position;
+        long nhSize = nhEnd - nhStart;
+
+        // ── 回填 NextHeaderOffset/Size ──
+        long savedPos = ms.Position;
+        ms.Position = nextOffFieldPos;
+        var bw = new BinaryWriter(ms);
+        bw.Write((ulong)(nhStart - 32)); // NextHeaderOffset relative to start header end
+        bw.Write((ulong)nhSize);         // NextHeaderSize
+        bw.Write(0u);                    // NextHeaderCRC (0 for test)
+        bw.Flush();
+        ms.Position = savedPos;
+
+        File.WriteAllBytes(path, ms.ToArray());
+        nextHeaderOffset = nhStart;
+        return path;
+    }
+
+    /// <summary>辅助 VINT 写入（与测试文件同步）</summary>
+    private static void Write7zVint(BinaryWriter w, ulong value)
+    {
+        if (value < 0x80)
+        {
+            w.Write((byte)value);
+            return;
+        }
+        int bits = 0;
+        ulong tmp = value;
+        while (tmp > 0) { bits++; tmp >>= 1; }
+        int extraBytes = (bits + 6) / 7;
+        byte first = (byte)((0xFF << (8 - extraBytes)) & 0xFF);
+        ulong mask = (1UL << (7 - extraBytes)) - 1;
+        first |= (byte)((value >> (extraBytes * 8)) & mask);
+        w.Write(first);
+        // 额外字节：小端序（低位在前）
+        for (int i = 0; i < extraBytes; i++)
+            w.Write((byte)((value >> (i * 8)) & 0xFF));
+    }
+
+    [Fact]
+    public void Recognize_7zFile_WithPlainHeader_DetectsFiles()
+    {
+        var filePath = Create7zWithPlainHeader(["readme.txt", "sub/file.bin"], out _);
+        using var buffer = BinaryBuffer.LoadFromFile(filePath);
+
+        var result = _recognizer.Recognize(buffer);
+
+        var szNode = result.Children.FirstOrDefault(c => c.Name == "7z");
+        Assert.NotNull(szNode);
+
+        // 确认有 7z Start Header 节点
+        var header = szNode.Children.FirstOrDefault(c => c.Name == "7z Start Header");
+        Assert.NotNull(header);
+
+        // 确认有 NextHeader 节点且包含解析结果
+        var nhNode = szNode.Children.FirstOrDefault(c => c.Name == "NextHeader");
+        Assert.NotNull(nhNode);
+
+        // 包含文件数信息
+        var numFiles = nhNode.Children.FirstOrDefault(c => c.Name == "NumFiles");
+        Assert.NotNull(numFiles);
+        Assert.Contains("2", numFiles.Description ?? "");
+
+        // 包含文件名预览
+        var file0 = nhNode.Children.FirstOrDefault(c => c.Name == "File[0]");
+        Assert.NotNull(file0);
+        Assert.Contains("readme.txt", file0.Description ?? "");
+
+        var file1 = nhNode.Children.FirstOrDefault(c => c.Name == "File[1]");
+        Assert.NotNull(file1);
+        Assert.Contains("sub/file.bin", file1.Description ?? "");
     }
 
     // ============================================================

@@ -6,8 +6,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using FileStruct.App.ViewModels;
+using FileStruct.App.Utils;
 using FileStruct.Core.Interfaces;
 using FileStruct.Core.Models;
+using FileStruct.Services.StructureRecognition.SevenZipParser;
 
 namespace FileStruct.App.Views;
 
@@ -301,6 +303,8 @@ public partial class StructureTreeView : UserControl
     private static bool IsArchiveNode(StructureNode node, BinaryBuffer buffer)
     {
         if (buffer == null || node.Offset < 0) return false;
+        // 跳过虚拟节点（如 BuildArchiveTree 创建的目录节点，offset=0, length=0）
+        if (node.Length == 0 && node.DataType == FieldDataType.Struct) return false;
         if (node.Offset + 4 > buffer.Length) return false;
         // ZIP: PK\x03\x04 (LH) / PK\x01\x02 (CD) / PK\x05\x06 (EOCD) / 分卷签名
         var sig = buffer.ReadUInt32(node.Offset, true);
@@ -384,7 +388,6 @@ public partial class StructureTreeView : UserControl
             else if (sig32 == 0x21726152) // "Rar!"
             {
                 var rarVer = buffer.ReadByte(item.Node.Offset + 6);
-                System.Diagnostics.Debug.WriteLine($"[RAR] 版本字节={rarVer}, 文件大小={buffer.Length}");
                 if (rarVer == 1)
                 {
                     var count = ExpandRar5Archive(item, buffer, mainVm);
@@ -509,10 +512,8 @@ public partial class StructureTreeView : UserControl
 
         private int ExpandRar5Archive(TreeItemViewModel item, BinaryBuffer buffer, MainViewModel mainVm)
         {
-            System.Diagnostics.Debug.WriteLine("[RAR5] 开始展开");
             var startOffset = item.Node.Offset;
             long pos = startOffset + 8; // 跳过 "Rar!\x1A\x07\x01\x00" 标记(8字节)
-            System.Diagnostics.Debug.WriteLine($"[RAR5] startOffset={startOffset}, pos={pos}, fileLen={buffer.Length}");
             int count = 0;
             var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
 
@@ -521,18 +522,14 @@ public partial class StructureTreeView : UserControl
                 // CRC32 (4 bytes, we just skip it)
                 // HeaderSize (vint) → header 总大小
                 var hdrBytes = ReadRar5Block(buffer, pos, out int hdrSize);
-                if (hdrBytes == null || hdrSize < 2) { System.Diagnostics.Debug.WriteLine($"[RAR5] 块空或太小 pos={pos}"); break; }
 
-                System.Diagnostics.Debug.WriteLine($"[RAR5] 块 pos={pos}, hdrSize={hdrSize}, 前4字节={BitConverter.ToString(hdrBytes, 0, Math.Min(4, hdrBytes.Length))}");
 
                 int off = 4; // skip CRC32
                 var (hdrSizeVal, hdrSizeLen) = ReadRar5Vint(hdrBytes, off);
                 off += hdrSizeLen;
-                if (hdrSizeVal < 2UL || hdrSizeVal > (ulong)hdrBytes.Length) { System.Diagnostics.Debug.WriteLine($"[RAR5] hdrSizeVal={hdrSizeVal} 异常"); break; }
 
                 var (hdrType, typeLen) = ReadRar5Vint(hdrBytes, off);
                 off += typeLen;
-                System.Diagnostics.Debug.WriteLine($"[RAR5] hdrType={hdrType}");
 
                 var (hdrFlags, flagsLen) = ReadRar5Vint(hdrBytes, off);
                 off += flagsLen;
@@ -618,16 +615,13 @@ public partial class StructureTreeView : UserControl
                         entries.Add((dataOff, dataLen > 0 ? dataLen : (long)unpackedSize,
                             displayName, desc, fileName, isEnc));
                         count++;
-                        System.Diagnostics.Debug.WriteLine($"[RAR5] 发现文件: {fileName}, size={unpackedSize}, off={dataOff}");
                     }
                 }
                 else if (hdrTypeInt == 5) // 结束块
-                { System.Diagnostics.Debug.WriteLine("[RAR5] 结束块"); break; }
 
                 pos += hdrSize + (long)dataAreaSize;
                 if (pos >= buffer.Length) break;
             }
-            System.Diagnostics.Debug.WriteLine($"[RAR5] 展开结束，共 {count} 个文件");
 
             if (count > 0)
             {
@@ -636,7 +630,6 @@ public partial class StructureTreeView : UserControl
             }
 
             // 后备方案：扫描文件名模式
-            System.Diagnostics.Debug.WriteLine("[RAR5] 尝试文件名扫描模式");
             mainVm.StatusText = "正在扫描RAR5文件名...";
 
             long scanStart = startOffset + 8;
@@ -780,13 +773,11 @@ public partial class StructureTreeView : UserControl
                 var pubKeyLen = buffer.ReadUInt32(8, true);
                 var sigLen = buffer.ReadUInt32(12, true);
                 zipDataOffset = 16L + pubKeyLen + sigLen;
-                System.Diagnostics.Debug.WriteLine($"[CRX] v2 pubKeyLen={pubKeyLen} sigLen={sigLen} zipOffset=0x{zipDataOffset:X}");
             }
             else if (version == 3)
             {
                 var headerLen = buffer.ReadUInt32(8, true);
                 zipDataOffset = 12L + headerLen;
-                System.Diagnostics.Debug.WriteLine($"[CRX] v3 headerLen={headerLen} zipOffset=0x{zipDataOffset:X}");
             }
             else
             {
@@ -1039,106 +1030,311 @@ public partial class StructureTreeView : UserControl
         {
             if (buffer.Length < 32) { mainVm.StatusText = "7z 文件头部不完整"; return; }
 
-            var majorVer = buffer.ReadByte(6);
-            var minorVer = buffer.ReadByte(7);
-            var nextOff = (long)buffer.ReadUInt64(12, true);
-            var nextSize = (long)buffer.ReadUInt64(20, true);
+            long baseOffset = item.Node.Offset;
+            bool isMultiVolume = mainVm.VolumeList.Count > 1 && mainVm.IsVolumeListVisible;
 
-            if (nextOff == 0 || nextSize == 0) { mainVm.StatusText = "7z 文件中无附加头（空归档？）"; return; }
+            // ── Step 1: 读 SignatureHeader ──
+            var majorVer = buffer.ReadByte(baseOffset + 6);
+            var minorVer = buffer.ReadByte(baseOffset + 7);
+            var nextOff = (long)buffer.ReadUInt64(baseOffset + 12, true);
+            var nextSize = (long)buffer.ReadUInt64(baseOffset + 20, true);
 
-            var nhStart = 32 + nextOff;
-            if (nhStart + nextSize > buffer.Length) { mainVm.StatusText = "7z Next Header 超出文件范围"; return; }
+            if (nextOff == 0 && nextSize == 0) { mainVm.StatusText = "7z 文件中无附加头（空归档？）"; return; }
 
-            // 尝试在 Next Header 数据中提取文件条目（不完整，需要 LZMA 解压元数据）
-            // 这里提供基本的结构信息展示
-            var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
+            // ── Step 2: 定位并读取 NextHeader ──
+            long nhAbsolute = baseOffset + 32 + nextOff;
+            byte[] nhData;
 
-            // Next Header 结构: type(1) + content
-            // type=0x17: PackedStreamsInfo
-            // type=0x02: StreamsInfo
-            // type=0x04: FilesInfo
-            // type=0x05: SubStreamsInfo
-            // type=0x00: Header end marker
-
-            long nhPos = nhStart;
-            long nhEnd = nhStart + nextSize;
-            int fileCount = 0;
-
-            // 简单扫描：找 FilesInfo (type=0x04)
-            while (nhPos + 1 <= nhEnd)
+            // 多卷：NextHeader 在尾部卷
+            if (isMultiVolume && nhAbsolute >= buffer.Length)
             {
-                var type = buffer.ReadByte(nhPos);
-                nhPos++;
-                if (type == 0x00) break; // end
+                var volPaths = mainVm.VolumeList.Select(v => v.FullPath)
+                    .Where(p => !string.IsNullOrEmpty(p)).Distinct().ToList();
+                if (volPaths.Count < 2) { mainVm.StatusText = "多卷信息不完整"; return; }
 
-                if (type == 0x04) // FilesInfo
+                // 从最后卷尾部读取 NextHeader
+                var lastVolPath = volPaths[^1];
+                if (!File.Exists(lastVolPath)) { mainVm.StatusText = $"未找到尾卷: {Path.GetFileName(lastVolPath)}"; return; }
+
+                BinaryBuffer? lastBuf = null;
+                try
                 {
-                    // FilesInfo: NumFiles + [name_offsets] + [names]
-                    if (nhPos + 4 > nhEnd) break;
+                    lastBuf = BinaryBuffer.LoadFromFile(lastVolPath);
+                    // NextHeader 总是在最后卷的尾部——重新计算局部偏移
+                    long localNhStart = lastBuf.Length - nextSize;
+                    if (localNhStart < 0 || nextSize <= 0)
+                    { mainVm.StatusText = "尾卷中未找到 NextHeader"; return; }
 
-                    // NumFiles 是 UInt64 (vint-encoded in modern 7z, uint32 in old)
-                    var fileCount64 = buffer.ReadUInt64(nhPos, true);
-                    fileCount = (int)Math.Min(fileCount64, 100000L);
-                    nhPos += 8;
-
-                    if (fileCount > 0 && fileCount < 100000)
-                    {
-                        // 跳过 sizes/attrs/name_index 区域，直达文件名区（尾部）
-                        var nameDataStart = nhPos;
-                        // 尝试在剩余数据末尾找文件名
-                        var tailStart = Math.Max(nhPos, nhEnd - 8192);
-                        for (long scanPos = nhEnd - 1; scanPos >= tailStart && entries.Count < Math.Min(fileCount, 500); scanPos--)
-                        {
-                            if (buffer.ReadByte(scanPos) >= 0x20 && buffer.ReadByte(scanPos) < 0x7F)
-                            {
-                                // 向前找文件名开始
-                                long nameStart = scanPos;
-                                while (nameStart > tailStart && buffer.ReadByte(nameStart - 1) >= 0x20 && buffer.ReadByte(nameStart - 1) < 0x7F)
-                                    nameStart--;
-                                if (scanPos - nameStart >= 3 && scanPos - nameStart <= 256)
-                                {
-                                    var nameLen = (int)(scanPos - nameStart + 1);
-                                    var nameBytes = buffer.ReadBytes(nameStart, nameLen);
-                                    var name = System.Text.Encoding.UTF8.GetString(nameBytes);
-                                    if (name.Contains('.') || name.Contains('/'))
-                                    {
-                                        entries.Insert(0, (0, 0, $"{name}  [LZMA]  -", $"7z v{majorVer}.{minorVer:00}", name, false));
-                                    }
-                                    scanPos = nameStart - 1;
-                                }
-                            }
-                        }
-                    }
-                    break; // FilesInfo 之后不再有别的有用类型
+                    nhData = lastBuf.ReadBytes(localNhStart, (int)nextSize);
                 }
-                else
-                {
-                    // 其他类型：跳过
-                    // 简单启发式：读到下一个 type 标记或文件尾
-                    var skipCount = 0;
-                    while (nhPos < nhEnd && skipCount < 4096)
-                    {
-                        var b = buffer.ReadByte(nhPos);
-                        if (b == 0x00 || b == 0x17 || b == 0x02 || b == 0x04 || b == 0x05)
-                            break;
-                        nhPos++;
-                        skipCount++;
-                    }
-                }
-            }
-
-            if (entries.Count > 0)
-            {
-                mainVm.StatusText = $"7z 展开完成 (v{majorVer}.{minorVer:00}), 共 {entries.Count} 个文件";
-                BuildArchiveTree(item.Node, entries, mainVm);
-            }
-            else if (fileCount > 0)
-            {
-                mainVm.StatusText = $"7z (v{majorVer}.{minorVer:00}) 含 {fileCount} 个文件（元数据为压缩格式，暂不支持完全列出）";
+                finally { lastBuf?.Dispose(); }
             }
             else
             {
-                mainVm.StatusText = $"7z (v{majorVer}.{minorVer:00}) 文件 (NextHeader @ 0x{nhStart:X}, size={nextSize})";
+                // 单卷：直接读取
+                if (nhAbsolute + nextSize > buffer.Length)
+                { mainVm.StatusText = "7z Next Header 超出文件范围"; return; }
+
+                var readSize = (int)Math.Min(nextSize, 1024 * 1024);
+                nhData = buffer.ReadBytes(nhAbsolute, readSize);
+            }
+
+            // ── Step 3: 用 NID 解析器解析 NextHeader ──
+            var parser = new SevenZipHeaderParser();
+            var parseResult = parser.Parse(nhData);
+
+            var entries = new List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)>();
+
+            if (parseResult.HeaderIsCompressed)
+            {
+                // ── 压缩头 (kEncodedHeader)：尝试 LZMA 解压获取文件列表 ──
+                if (parseResult.PackStreams.Count > 0 && parseResult.LzmaProperties != null &&
+                    parseResult.HeaderUnpackedSize > 0 && parseResult.HeaderUnpackedSize < 1024 * 1024)
+                {
+                    var ps = parseResult.PackStreams[0];
+                    long compressedOffset = baseOffset + 32 + ps.PackPos;
+                    byte[]? compressedData = null;
+
+                    if (isMultiVolume)
+                    {
+                        // 多卷：压缩头数据在尾卷
+                        var volPaths = mainVm.VolumeList.Select(v => v.FullPath)
+                            .Where(p => !string.IsNullOrEmpty(p)).Distinct().ToList();
+                        if (volPaths.Count > 1)
+                        {
+                            var lastVol = volPaths[^1];
+                            if (File.Exists(lastVol))
+                            {
+                                // 压缩数据在尾卷局部位置
+                                long totalPrev = 0;
+                                for (int vi = 0; vi < volPaths.Count - 1; vi++)
+                                    try { totalPrev += new FileInfo(volPaths[vi]).Length; } catch { }
+                                long localOff = compressedOffset - totalPrev;
+                                BinaryBuffer? lastBuf2 = null;
+                                try
+                                {
+                                    lastBuf2 = BinaryBuffer.LoadFromFile(lastVol);
+                                    if (localOff >= 0 && localOff + ps.PackSize <= lastBuf2.Length)
+                                        compressedData = lastBuf2.ReadBytes(localOff, (int)ps.PackSize);
+                                }
+                                finally { lastBuf2?.Dispose(); }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (compressedOffset >= 0 && compressedOffset + ps.PackSize <= buffer.Length)
+                            compressedData = buffer.ReadBytes(compressedOffset, (int)ps.PackSize);
+                    }
+
+                    if (compressedData != null)
+                    {
+                        try
+                        {
+                            var decompressed = SevenZipLzmaDecoder.Decompress(
+                                parseResult.LzmaProperties, compressedData, parseResult.HeaderUnpackedSize);
+
+                            var innerParser = new SevenZipHeaderParser();
+                            var innerResult = innerParser.Parse(decompressed);
+
+                            if (innerResult.Files.Count > 0)
+                            {
+                                // 从解压头的 MainStreamsInfo 获取数据流偏移基线
+                                long dataBase = baseOffset + 32;
+                                if (innerResult.PackStreams.Count > 0)
+                                    dataBase += innerResult.PackStreams[0].PackPos;
+
+                                // 从 SubStreamsInfo 获取每个子流的解压大小
+                                var subSizes = innerResult.SubStreamUnpackSizes;
+                                // 计算最后一个子流大小 = 总解压大小 - 已列出大小之和
+                                long totalUnpack = innerResult.HeaderUnpackedSize;
+                                long sumExplicit = subSizes.Sum();
+                                if (sumExplicit < totalUnpack && subSizes.Count > 0)
+                                    subSizes.Add(totalUnpack - sumExplicit);
+
+                                long cumulativeOff = 0;
+                                int sizeIdx = 0;
+                                // 最后一个子流的大小（如果文件数超过子流数，多余文件共享此大小）
+                                long lastSubSize = subSizes.Count > 0 ? subSizes[^1] : 1;
+                                long lastSubOff = 0;
+                                bool lastSubUsed = false;
+
+                                string globalMethod = innerResult.CompressionMethods ?? parseResult.CompressionMethods ?? "LZMA";
+                                for (int i = 0; i < innerResult.Files.Count; i++)
+                                {
+                                    var f = innerResult.Files[i];
+                                    if (f.IsEmptyStream || string.IsNullOrEmpty(f.Name))
+                                    {
+                                        if (!string.IsNullOrEmpty(f.Name) && f.Name.EndsWith("/"))
+                                            entries.Add((0, 0, $"{f.Name}  [-]  -", "目录条目", f.Name.TrimEnd('/'), false));
+                                        continue;
+                                    }
+                                    // 空文件不消耗子流索引。多余的非空文件共享最后一个子流
+                                    long fileLen, fileOff;
+                                    if (sizeIdx < subSizes.Count)
+                                    {
+                                        fileLen = subSizes[sizeIdx];
+                                        fileOff = dataBase + cumulativeOff;
+                                        cumulativeOff += fileLen;
+                                        sizeIdx++;
+                                        if (sizeIdx == subSizes.Count)
+                                        { lastSubOff = fileOff; lastSubUsed = true; }
+                                    }
+                                    else
+                                    {
+                                        // 此文件与上一个文件共享最后一个子流
+                                        fileOff = lastSubOff;
+                                        fileLen = lastSubSize;
+                                    }
+                                    if (fileLen <= 0) fileLen = 1;
+
+                                    string sharedNote = sizeIdx > subSizes.Count ? " [共享子流]" : "";
+                                    string methodStr = string.IsNullOrEmpty(f.CompressionMethod) ? globalMethod : f.CompressionMethod;
+                                    string encMark = f.IsEncrypted ? "[加密] " : "";
+                                    string sizeStr = FormatSize(fileLen) + sharedNote;
+                                    entries.Add((fileOff, fileLen,
+                                        $"{f.Name}  [{methodStr}]  {sizeStr}",
+                                        $"{encMark}{methodStr}: {FormatSize(fileLen)} @ 0x{fileOff:X}",
+                                        f.Name, f.IsEncrypted || (innerResult.IsEncrypted && !f.IsEncrypted)));
+                                }
+                                parseResult = innerResult;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                        }
+                    }
+                }
+
+                // 若 LZMA 解压未产出文件，降级展示 StreamsInfo
+                if (entries.Count == 0)
+                {
+                    mainVm.StatusText = $"7z (v{majorVer}.{minorVer:00}) 头为 LZMA 压缩" +
+                        (parseResult.NumFiles > 0 ? $"，含 {parseResult.NumFiles} 个文件（需 LZMA 解压元数据）" : "，暂无法展开文件列表");
+
+                    if (parseResult.PackStreams.Count > 0)
+                    {
+                        long totalPacked = 0;
+                        foreach (var ps in parseResult.PackStreams) totalPacked += ps.PackSize;
+                        long packPos = parseResult.PackStreams[0].PackPos;
+                        entries.Add((baseOffset + 32 + packPos, totalPacked,
+                            $"⚠ 编码头 (LZMA)  {FormatSize(totalPacked)}",
+                            $"{(parseResult.IsEncrypted ? "[加密] " : "")}{parseResult.PackStreams.Count} 个包裹流, {totalPacked} bytes → {parseResult.HeaderUnpackedSize} bytes  (文件元数据在 LZMA 压缩块内)",
+                            "__encoded_header__", parseResult.IsEncrypted));
+                    }
+                }
+            }
+            else if (parseResult.Files.Count > 0)
+            {
+                // ── 普通头：提取文件名、方法、大小、加密信息 ──
+                long dataBaseOffset = baseOffset + 32;
+                if (parseResult.PackStreams.Count > 0)
+                    dataBaseOffset += parseResult.PackStreams[0].PackPos;
+
+                string globalMethod = parseResult.CompressionMethods ?? "LZMA";
+
+                for (int i = 0; i < parseResult.Files.Count; i++)
+                {
+                    var f = parseResult.Files[i];
+                    if (f.IsEmptyStream || string.IsNullOrEmpty(f.Name))
+                    {
+                        if (!string.IsNullOrEmpty(f.Name) && f.Name.EndsWith("/"))
+                            entries.Add((0, 0, $"{f.Name}  [-]  -", "目录条目", f.Name.TrimEnd('/'), false));
+                        continue;
+                    }
+                    long fileDataOff = i < parseResult.PackStreams.Count
+                        ? baseOffset + 32 + parseResult.PackStreams[i].PackPos : dataBaseOffset;
+                    if (parseResult.IsEncrypted && !f.IsEncrypted) f.IsEncrypted = parseResult.IsEncrypted;
+                    string methodStr = string.IsNullOrEmpty(f.CompressionMethod) ? globalMethod : f.CompressionMethod;
+                    string encMark = f.IsEncrypted ? "[加密] " : "";
+                    string sizeStr = f.UnpackedSize > 0 ? FormatSize(f.UnpackedSize) : "?";
+                    string volSuffix = f.VolumeIndex > 0 ? $" [卷 {f.VolumeIndex + 1}]" : "";
+                    entries.Add((fileDataOff, f.PackedSize > 0 ? f.PackedSize : f.UnpackedSize,
+                        $"{f.Name}  [{methodStr}]  {sizeStr}{volSuffix}",
+                        $"{encMark}{methodStr}: {(f.PackedSize > 0 ? FormatSize(f.PackedSize) : "?")}{(f.UnpackedSize > 0 ? $" → {FormatSize(f.UnpackedSize)}" : "")}{(f.VolumeIndex > 0 ? $" (分卷 {f.VolumeIndex + 1})" : "")}",
+                        f.Name, f.IsEncrypted));
+                }
+            }
+
+            // ── Step 5: 构建树节点 ──
+            if (entries.Count > 0)
+            {
+                mainVm.StatusText = $"7z 展开完成 (v{majorVer}.{minorVer:00}), 共 {entries.Count} 个条目" +
+                    (parseResult.IsEncrypted ? " [检测到加密]" : "");
+                BuildArchiveTree(item.Node, entries, mainVm);
+
+                if (mainVm.VolumeList.Count > 0 && mainVm.IsVolumeListVisible)
+                    TryMapVolumesFor7z(entries, parseResult, mainVm);
+            }
+            else if (parseResult.NumFiles > 0)
+            {
+                mainVm.StatusText = $"7z (v{majorVer}.{minorVer:00}) 含 {parseResult.NumFiles} 个文件" +
+                    "（元数据为压缩格式，暂无法列出文件名）";
+            }
+            else
+            {
+                mainVm.StatusText = $"7z (v{majorVer}.{minorVer:00}) 文件 (NextHeader size={nextSize})";
+            }
+
+            if (parseResult.ErrorMessage != null)
+                mainVm.StatusText += $" | {parseResult.ErrorMessage}";
+        }
+
+        /// <summary>7z 分卷映射：将 PackStream 位置映射到分卷索引</summary>
+        private static void TryMapVolumesFor7z(
+            List<(long dataOffset, long length, string displayName, string description, string path, bool isEncrypted)> entries,
+            SevenZipParseResult parseResult, MainViewModel mainVm)
+        {
+            try
+            {
+                // 通过 VolumeList 获取分卷路径（VolumeListItem.FullPath）
+                var volPaths = mainVm.VolumeList
+                    .Select(v => v.FullPath)
+                    .Where(p => !string.IsNullOrEmpty(p))
+                    .Distinct()
+                    .ToList();
+                if (volPaths.Count < 2) return;
+
+                var volSizes = new List<long>();
+                foreach (var v in volPaths)
+                {
+                    try
+                    {
+                        using var volBuf = BinaryBuffer.LoadFromFile(v);
+                        volSizes.Add(volBuf.Length);
+                    }
+                    catch { volSizes.Add(0); }
+                }
+
+                // 为每个 PackStream 确定所在卷
+                for (int si = 0; si < parseResult.PackStreams.Count && si < volPaths.Count; si++)
+                {
+                    var ps = parseResult.PackStreams[si];
+                    long absPos = ps.PackPos;
+                    long remaining = ps.PackSize;
+
+                    for (int vi = 0; vi < volSizes.Count && remaining > 0; vi++)
+                    {
+                        if (absPos < volSizes[vi])
+                        {
+                            // 此流（或此 chunk）在卷 vi
+                            long chunk = Math.Min(remaining, volSizes[vi] - absPos);
+                            ps.VolumeIndex = vi;
+                            remaining -= chunk;
+                            absPos += chunk;
+                        }
+                        else
+                        {
+                            absPos -= volSizes[vi];
+                        }
+                    }
+                }
+
+                // 更新条目显示（只更新非首卷的标记）
+                // 条目和 PackStream 的对应关系已在 Expand7zArchive 中处理
+            }
+            catch (Exception ex)
+            {
             }
         }
 

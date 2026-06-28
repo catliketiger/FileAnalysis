@@ -19,6 +19,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <NoWarn>$(NoWarn);NU1510</NoWarn>
+    <Version>1.7.1.0</Version>
+    <FileVersion>1.7.1.0</FileVersion>
   </PropertyGroup>
 
 </Project>

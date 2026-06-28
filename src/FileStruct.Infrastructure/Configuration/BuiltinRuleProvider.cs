@@ -814,11 +814,15 @@ public static class BuiltinRuleProvider
         [
             ("7z Start Header", [
                 ("Signature", "bytes", 0, 6, null),
-                ("Version", "bytes", 6, 2, null),
+                ("MajorVersion", "uint8", 6, 1, null),
+                ("MinorVersion", "uint8", 7, 1, null),
                 ("StartHeaderCRC", "uint32", 8, 4, null),
                 ("NextHeaderOffset", "uint64", 12, 8, null),
                 ("NextHeaderSize", "uint64", 20, 8, null),
                 ("NextHeaderCRC", "uint32", 28, 4, null),
+            ], false),
+            ("7z NextHeader", [
+                ("NextHeaderData", "bytes", 32, 0, null),
             ], false),
         ]);
 

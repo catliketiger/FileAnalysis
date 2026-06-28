@@ -572,11 +572,7 @@ public class StructureRecognizer : IStructureRecognizer
                 });
             }
         }
-        catch (Exception ex)
-        {
-            // PDF 解析失败不中断识别过程
-            System.Diagnostics.Debug.WriteLine($"[PDF] 后处理异常: {ex.Message}");
-        }
+        catch { /* PDF 解析失败不中断识别过程 */ }
     }
 
     private static void AddTrailerEntry(StructureNode parent, string trailer, string key, string label)
@@ -702,10 +698,7 @@ public class StructureRecognizer : IStructureRecognizer
             // 6. 执行加壳检测
             DetectPacker(peNode, sectionNames, sectionInfos, addressOfEntryPoint, sectionTableOffset);
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[PE] 后处理异常: {ex.Message}");
-        }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>快捷创建 StructureNode 字段节点</summary>
@@ -1048,10 +1041,7 @@ public class StructureRecognizer : IStructureRecognizer
             // 4. 检测 APK Signature Scheme v2/v3 签名块
             DetectApkSigningBlock(buffer, apkNode, cdOffset);
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[APK] 后处理异常: {ex.Message}");
-        }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>从文件尾扫描查找 EOCD 签名 (0x06054B50)</summary>
@@ -1248,10 +1238,7 @@ public class StructureRecognizer : IStructureRecognizer
                 epubNode.AddChild(compsNode);
             }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[EPUB] 后处理异常: {ex.Message}");
-        }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>
@@ -1474,10 +1461,7 @@ public class StructureRecognizer : IStructureRecognizer
                 }
             }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[MOBI] 后处理异常: {ex.Message}");
-        }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>
@@ -1624,10 +1608,7 @@ public class StructureRecognizer : IStructureRecognizer
                 crxNode.AddChild(compsNode);
             }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[CRX] 后处理异常: {ex.Message}");
-        }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>
@@ -1836,10 +1817,7 @@ public class StructureRecognizer : IStructureRecognizer
                     lnkNode.AddChild(extraDataNode);
             }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[LNK] 后处理异常: {ex.Message}");
-        }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>
@@ -1977,10 +1955,7 @@ public class StructureRecognizer : IStructureRecognizer
                     dmgNode.AddChild(plistNode);
             }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[DMG] 后处理异常: {ex.Message}");
-        }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>格式化文件大小（DMG 后处理用）</summary>
@@ -2069,10 +2044,7 @@ public class StructureRecognizer : IStructureRecognizer
                 }
             }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[PYC] 后处理异常: {ex.Message}");
-        }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>
@@ -2172,10 +2144,7 @@ public class StructureRecognizer : IStructureRecognizer
                 }
             }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[PAK] 后处理异常: {ex.Message}");
-        }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>
@@ -2212,14 +2181,11 @@ public class StructureRecognizer : IStructureRecognizer
                 }
             }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[CAB] 后处理异常: {ex.Message}");
-        }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>
-    /// 7z 后处理：解析版本、NextHeader 偏移/大小
+    /// 7z 后处理：解析版本、NextHeader 偏移/大小，及 NID 树结构
     /// </summary>
     private static void PostProcess7z(BinaryBuffer buffer, StructureNode szNode)
     {
@@ -2229,26 +2195,80 @@ public class StructureRecognizer : IStructureRecognizer
 
             var majorVer = buffer.ReadByte(6);
             var minorVer = buffer.ReadByte(7);
-            szNode.AddChild(MakeField("Version", $"v{majorVer}.{minorVer:00}", 6, 2, FieldDataType.Bytes, 0.95));
 
             var nextOff = buffer.ReadUInt64(12, true);
             var nextSize = buffer.ReadUInt64(20, true);
-            szNode.AddChild(MakeField("NextHeaderOffset", $"0x{nextOff:X} ({(nextOff > 0 ? "从 Start Header 末尾偏移" : "无附加头")})", 12, 8, FieldDataType.UInt64LE, 0.9));
-            szNode.AddChild(MakeField("NextHeaderSize", $"{nextSize} bytes", 20, 8, FieldDataType.UInt64LE, 0.9));
+            var nextCrc = buffer.ReadUInt32(28, true);
 
-            // 尝试从文件尾解析 Next Header 中的 FilesInfo
-            if (nextOff > 0 && nextSize > 0 && 32 + (long)nextOff + (long)nextSize <= buffer.Length)
+            // ── 解析 NextHeader（允许 NextHeaderOffset=0，即紧跟在 SignatureHeader 后）───
+            if (nextSize > 0 && (long)nextOff >= 0 && 32 + (long)nextOff + (long)nextSize <= buffer.Length)
             {
                 var nhStart = 32 + (long)nextOff;
-                // Next Header 以 type(1) + properties 开头
-                // 简单尝试提取文件数量信息
-                szNode.AddChild(MakeField("NextHeader", $"位于 0x{nhStart:X}, size={nextSize}", nhStart, (long)nextSize, FieldDataType.Bytes, 0.85));
+                var nhSize = (long)nextSize;
+
+                // 安全上限：单次最多读取 1MB
+                var readSize = Math.Min((int)nhSize, 1024 * 1024);
+                var nhData = buffer.ReadBytes(nhStart, readSize);
+
+                var parser = new SevenZipParser.SevenZipHeaderParser();
+                var parseResult = parser.Parse(nhData);
+
+                // ── 构建结构树 ──
+                var nhNode = MakeField("NextHeader", $"位于 0x{nhStart:X}, size={nhSize}", nhStart, nhSize, FieldDataType.Bytes, 0.85);
+                szNode.AddChild(nhNode);
+
+                if (parseResult.HeaderIsCompressed)
+                {
+                    nhNode.AddChild(MakeField("HeaderType", "编码头 (Encoded/LZMA 压缩)", 0, 0, FieldDataType.Struct, 0.8));
+
+                    if (parseResult.PackStreams.Count > 0)
+                    {
+                        nhNode.AddChild(MakeField("PackStreams", $"{parseResult.PackStreams.Count} 个数据流", 0, 0, FieldDataType.Struct, 0.7));
+                    }
+                }
+                else
+                {
+                    nhNode.AddChild(MakeField("HeaderType", "普通头 (Plain Header)", 0, 0, FieldDataType.Struct, 0.9));
+
+                    if (parseResult.NumFiles > 0)
+                    {
+                        var numFilesNode = MakeField("NumFiles", $"{parseResult.NumFiles} 个文件", 0, 0, FieldDataType.Struct, 0.9);
+                        nhNode.AddChild(numFilesNode);
+
+                        if (parseResult.IsEncrypted)
+                        {
+                            nhNode.AddChild(MakeField("Encryption", "检测到 7zAES-256 加密", 0, 0, FieldDataType.Struct, 0.95));
+                        }
+
+                        if (parseResult.CompressionMethods != null)
+                        {
+                            nhNode.AddChild(MakeField("Compression", parseResult.CompressionMethods, 0, 0, FieldDataType.Struct, 0.8));
+                        }
+
+                        // 预览前 10 个文件名
+                        int previewCount = Math.Min(parseResult.Files.Count, 10);
+                        for (int i = 0; i < previewCount; i++)
+                        {
+                            var f = parseResult.Files[i];
+                            var fileName = string.IsNullOrEmpty(f.Name) ? $"(entry_{i})" : f.Name;
+                            var enc = f.IsEncrypted ? " [加密]" : "";
+                            var info = $"{fileName}{enc}  {parseResult.CompressionMethods ?? "?"}";
+                            nhNode.AddChild(MakeField($"File[{i}]", info, 0, 0, FieldDataType.Struct, 0.85));
+                        }
+                        if (parseResult.Files.Count > 10)
+                        {
+                            nhNode.AddChild(MakeField("...", $"...以及其他 {parseResult.Files.Count - 10} 个文件", 0, 0, FieldDataType.Struct, 0.7));
+                        }
+                    }
+                }
+
+                if (parseResult.ErrorMessage != null)
+                {
+                    nhNode.AddChild(MakeField("ParseWarning", parseResult.ErrorMessage, 0, 0, FieldDataType.Struct, 0.5));
+                }
             }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[7z] 后处理异常: {ex.Message}");
-        }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>TAR 后处理：解析条目数量和首文件名</summary>
@@ -2277,7 +2297,7 @@ public class StructureRecognizer : IStructureRecognizer
             if (count > 0)
                 tarNode.AddChild(MakeField("FileCount", $"{count}", 0, 0, FieldDataType.Bytes, 0.85));
         }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[TAR] 后处理异常: {ex.Message}"); }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>GZip 后处理：解析 FLG 可选字段、尾部 CRC32/ISIZE</summary>
@@ -2309,7 +2329,7 @@ public class StructureRecognizer : IStructureRecognizer
                 gzNode.AddChild(MakeField("ISIZE", $"{buffer.ReadUInt32(buffer.Length - 4, true)} bytes", buffer.Length - 4, 4, FieldDataType.UInt32LE, 0.9));
             }
         }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[GZip] 后处理异常: {ex.Message}"); }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>ZIP 后处理：扫描 EOCD 获取文件数量和 CD 偏移</summary>
@@ -2331,7 +2351,7 @@ public class StructureRecognizer : IStructureRecognizer
             zipNode.AddChild(MakeField("EOCD", $"entries={totalEntries}, cdOff=0x{cdOffset:X}, disk={cdDiskNum}",
                 eocdOff, 22, FieldDataType.Bytes, 0.9));
         }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[ZIP] 后处理异常: {ex.Message}"); }
+        catch { /* 不中断识别 */ }
     }
 
     /// <summary>获取动态偏移格式的基址偏移量</summary>

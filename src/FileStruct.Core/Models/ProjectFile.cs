@@ -6,7 +6,7 @@ namespace FileStruct.Core.Models;
 public class ProjectFile
 {
     /// <summary>当前项目文件版本号</summary>
-    public const string CurrentVersion = "1.6.0";
+    public const string CurrentVersion = "1.7.1";
 
     /// <summary>项目格式版本，用于向后兼容</summary>
     public string Version { get; set; } = CurrentVersion;

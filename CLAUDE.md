@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Windows desktop tool for binary file structure analysis — automatically identifies and visualizes the internal layout of unknown binary files through signature matching and heuristic inference, with a hex view + structure tree as the core interaction model.
 
-**Current status**: V1.7. C# .NET 10 WPF, with 50+ predefined format rules, ZIP/RAR4/RAR5/CAB/PAK/7z/TAR/GZip container expansion, multi-volume ZIP lazy-loading, PDF/MP4/MKV/JPG/EPUB/MOBI/AZW3 format recognition, PE packer detection (20+), structure tree management, asynchronous search, hex view with virtualization & selection highlighting, hex column header, 178 xUnit tests passing (0 warnings, 0 errors).
+**Current status**: V1.7.1. C# .NET 10 WPF, with 50+ predefined format rules, ZIP/RAR4/RAR5/CAB/PAK/7z/TAR/GZip container expansion, multi-volume ZIP/7z lazy-loading, PDF/MP4/MKV/JPG/EPUB/MOBI/AZW3 format recognition, PE packer detection (20+), structure tree management, 7z LZMA compressed header expansion, 213 xUnit tests passing (0 warnings, 0 errors).
 
 ## Tech Stack
 

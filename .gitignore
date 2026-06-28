@@ -123,6 +123,9 @@ Icon
 *~
 .directory
 
+# Sample/test files (not part of source distribution)
+samples/
+
 # ====================
 # Tooling
 # ====================
